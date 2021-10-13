@@ -1,10 +1,9 @@
-ode
-odejac
-heat
-pattern
+twoballs
 
 PetscBinaryIO.py
 petsc_conf.py
+plotTS.py
+
 *.pyc
 *.dat
 *.dat.info

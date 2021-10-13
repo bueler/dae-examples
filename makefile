@@ -18,7 +18,7 @@ pyScripts:
 
 # testing
 runtwoballs_1:
-	-@../testit.sh twoballs "-ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01" 1 1
+	-@./testit.sh twoballs "-ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01" 1 1
 # view .dat files by:
 #    $ ./plotTS.py -o figure.png t.dat u.dat -dof 8 -c 1
 #    $ eog figure.png
