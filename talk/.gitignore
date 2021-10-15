@@ -1,0 +1,9 @@
+/slides.pdf
+
+*.aux
+*.log
+*.toc
+*.snm
+*.out
+*.nav
+*.synctex.gz
