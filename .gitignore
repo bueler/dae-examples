@@ -2,7 +2,6 @@ twoballs
 
 PetscBinaryIO.py
 petsc_conf.py
-plotTS.py
 
 *.pyc
 *.dat
@@ -10,4 +9,3 @@ plotTS.py
 
 *.png
 *.m4v
-
