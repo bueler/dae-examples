@@ -63,12 +63,12 @@ PetscErrorCode SetInitial(Vec u) {
     VecGetArray(u,&au);
     au[0] = 0.0;
     au[1] = 1.0;
-    au[2] = 10.0;
-    au[3] = 10.0;
+    au[2] = 15.0;
+    au[3] = 15.0;
     au[4] = 0.0;
     au[5] = 2.0;
-    au[6] = 20.0;
-    au[7] = 20.0;
+    au[6] = 10.0;
+    au[7] = 10.0;
     VecRestoreArray(u,&au);
     return 0;
 }
