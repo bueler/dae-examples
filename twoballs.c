@@ -1,20 +1,22 @@
 static char help[] = "ODE/DAE system solver example using TS.\n"
 "Models two equal-mass balls (particles) moving in the plane with\n"
-"forces or constraints between.  In cartesian coordinates (x,y)\n"
-"and velocities (v=dx/dt,w=dy/dt) the system has dimension 8 or 9.\n"
-"(-tb_connect [free|spring] has dim=8, [rod] has dim=9.)\n\n";
+"forces or constraints between.  They are either unconnected (free),\n"
+"connected by a spring, or rigidly connected by a rod.  We use\n"
+"cartesian coordinates (x,y) and velocities (v=dx/dt,w=dy/dt).\n"
+"The system has dimension 8 (-tb_connect [free|nspring|lspring])\n"
+"or 9 (-tb_connect [rod]).\n\n";
 
 #include <petsc.h>
 
-typedef enum {FREE, SPRING, ROD} ConnectType;
-static const char* ConnectTypes[] = {"free","spring","rod",
+typedef enum {FREE, NSPRING, LSPRING, ROD} ConnectType;
+static const char* ConnectTypes[] = {"free","nspring","lspring","rod",
                                      "ProblemType", "", NULL};
 
 typedef struct {
     ConnectType  connect;
     PetscReal    g,     // m s-2;  acceleration of gravity
                  m,     // kg;     ball mass
-                 l,     // m;      spring length
+                 l,     // m;      spring or rod length
                  k;     // N m-1;  spring constant
 } TBCtx;
 
@@ -38,7 +40,7 @@ int main(int argc,char **argv) {
     user.k = 20.0;
     ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "tb_", "options for twoballs", "");
            CHKERRQ(ierr);
-    ierr = PetscOptionsEnum("-connect", "connect balls with free,spring,rod",
+    ierr = PetscOptionsEnum("-connect", "connect balls: free,nspring,lspring,rod",
                             "twoballs.c", ConnectTypes, (PetscEnum)user.connect,
                             (PetscEnum*)&user.connect, NULL); CHKERRQ(ierr);
     ierr = PetscOptionsReal("-g", "acceleration of gravity (m s-2)", "twoballs.c",
@@ -52,8 +54,8 @@ int main(int argc,char **argv) {
     ierr = PetscOptionsEnd(); CHKERRQ(ierr);
 
     // FIXME there will be two RHS functions
-    if (user.connect == ROD) {
-        SETERRQ(PETSC_COMM_SELF,3,"ROD and LagrangeRHS() not implemented\n");
+    if (user.connect == LSPRING || user.connect == ROD) {
+        SETERRQ(PETSC_COMM_SELF,3,"LagrangeRHS() not implemented\n");
     }
 
     ierr = VecCreate(PETSC_COMM_WORLD,&u); CHKERRQ(ierr);
@@ -80,8 +82,10 @@ int main(int argc,char **argv) {
     // compute error and report
     ierr = TSGetTime(ts,&tf); CHKERRQ(ierr);
     ierr = TSGetStepNumber(ts,&steps); CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "solved to tf = %.3f with %d steps\n",
-                       tf,steps); CHKERRQ(ierr);
+    // FIXME N or L type
+    ierr = PetscPrintf(PETSC_COMM_WORLD,
+                       "Newton forces problem (connect=%s) solved to tf = %.3f with %d steps\n",
+                       ConnectTypes[user.connect], tf, steps); CHKERRQ(ierr);
 
     VecDestroy(&u);  TSDestroy(&ts);
     return PetscFinalize();
@@ -109,8 +113,8 @@ PetscErrorCode NewtonRHS(TS ts, PetscReal t, Vec u, Vec G, void *ctx) {
     const PetscReal  *au;
     PetscReal        dspring = 0.0, cspring = 0.0,
                      Fx1, Fy1, Fx2, Fy2, *aG;
-    if (user->connect == ROD) {
-        SETERRQ(PETSC_COMM_SELF,2,"NewtonRHS() does not implement ROD; use LagrangeRHS()\n");
+    if (user->connect == LSPRING || user->connect == ROD) {
+        SETERRQ(PETSC_COMM_SELF,2,"LagrangeRHS() not implemented\n");
     }
     ierr = VecGetArrayRead(u,&au); CHKERRQ(ierr);
     ierr = VecGetArray(G,&aG); CHKERRQ(ierr);
@@ -118,7 +122,7 @@ PetscErrorCode NewtonRHS(TS ts, PetscReal t, Vec u, Vec G, void *ctx) {
     Fy1 = - user->m * user->g;
     Fx2 = 0.0;
     Fy2 = - user->m * user->g;
-    if (user->connect == SPRING) {
+    if (user->connect == NSPRING) {
         dspring = PetscSqrtReal(  (au[0] - au[4]) * (au[0] - au[4])
                                 + (au[1] - au[5]) * (au[1] - au[5]) );
         if (dspring == 0.0) {

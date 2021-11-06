@@ -15,16 +15,16 @@ pyScripts:
 	ln -sf ${PETSC_DIR}/lib/petsc/bin/petsc_conf.py
 
 # testing
-runtwoballs_1:
+runtwoballs_1: twoballs
 	-@./testit.sh twoballs "-ts_monitor -ts_view" 1 1
 
-runtwoballs_2:
-	-@./testit.sh twoballs "-ts_monitor -tb_connect spring -tb_k 0.1 -tb_l 1" 1 2
+runtwoballs_2: twoballs
+	-@./testit.sh twoballs "-ts_monitor -tb_connect nspring -tb_k 0.1 -tb_l 1" 1 2
 
-DATFILES:
-	@./twoballs -tb_connect spring -tb_k 5.0 -ts_max_time 10.0 -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01 > /dev/null
+DATFILES: twoballs
+	@./twoballs -tb_connect nspring -tb_k 5.0 -ts_max_time 10.0 -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01 > /dev/null
 
-runtrajectory_1: DATFILES
+runtrajectory_1: DATFILES pyScripts
 	-@./testit.sh trajectory.py "-o figure.png t.dat u.dat" 1 1
 
 test_twoballs: runtwoballs_1 runtwoballs_2
