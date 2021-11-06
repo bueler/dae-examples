@@ -22,7 +22,7 @@ runtwoballs_2:
 	-@./testit.sh twoballs "-ts_monitor -tb_connect spring -tb_k 0.1 -tb_l 1" 1 2
 
 DATFILES:
-	@./twoballs -ts_max_time 10.0 -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01 > /dev/null
+	@./twoballs -tb_connect spring -tb_k 5.0 -ts_max_time 10.0 -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01 > /dev/null
 
 runtrajectory_1: DATFILES
 	-@./testit.sh trajectory.py "-o figure.png t.dat u.dat" 1 1

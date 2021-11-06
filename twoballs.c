@@ -35,7 +35,7 @@ int main(int argc,char **argv) {
     user.g = 9.81;
     user.m = 58.0e-3; // 58 g for a tennis ball
     user.l = 0.2;
-    user.k = 50.0;
+    user.k = 20.0;
     ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "tb_", "options for twoballs", "");
            CHKERRQ(ierr);
     ierr = PetscOptionsEnum("-connect", "connect balls with free,spring,rod",
