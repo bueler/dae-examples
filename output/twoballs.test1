@@ -21,4 +21,4 @@ TS Object: 1 MPI processes
     maximum allowed timestep 1e+20
     minimum allowed timestep 1e-20
     maximum solution absolute value to be ignored -1.
-Newton forces problem (connect=free) solved to tf = 2.000 with 3 steps
+connect=free problem solved to tf = 2.000 with 3 steps

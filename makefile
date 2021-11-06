@@ -21,17 +21,17 @@ runtwoballs_1: twoballs
 runtwoballs_2: twoballs
 	-@./testit.sh twoballs "-ts_monitor -tb_connect nspring -tb_k 0.1 -tb_l 1" 1 2
 
-DATFILES: twoballs
-	@./twoballs -tb_connect nspring -tb_k 5.0 -ts_max_time 10.0 -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01 > /dev/null
+runtwoballs_3: twoballs
+	-@./testit.sh twoballs "-tb_connect nspring -tb_k 5.0 -ts_max_time 10.0 -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_adapt_dt_max 0.01" 1 3
 
-runtrajectory_1: DATFILES pyScripts
+runtrajectory_1: runtwoballs_3 pyScripts
 	-@./testit.sh trajectory.py "-o figure.png t.dat u.dat" 1 1
 
-test_twoballs: runtwoballs_1 runtwoballs_2
+test_twoballs: runtwoballs_1 runtwoballs_2 runtwoballs_3
 test_trajectory: runtrajectory_1
 test: test_twoballs test_trajectory
 
-.PHONY: distclean DATFILES
+.PHONY: distclean
 
 distclean:
 	@rm -f *~ twoballs *tmp
