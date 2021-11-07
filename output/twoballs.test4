@@ -11,15 +11,5 @@
 10 TS dt 0.526696 time 0.946608
 11 TS dt 0.526696 time 1.4733
 12 TS dt 1.05339 time 2.
-Vec Object: 1 MPI processes
-  type: seq
-30.
-11.3801
-15.
--4.62
-20.
-2.38007
-10.
--9.62
-0.
+numerical error at tf in free problem: |u-uexact|_inf = 7.34692e-05
 Lagrangian free problem solved to tf = 2.000 (12 steps)

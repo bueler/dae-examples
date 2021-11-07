@@ -26,6 +26,7 @@ typedef struct {
 } TBCtx;
 
 extern PetscErrorCode SetInitial(Vec, TBCtx*);
+extern PetscErrorCode FreeExact(Vec, PetscReal, Vec, TBCtx*);
 extern PetscErrorCode NewtonRHSFcn(TS, PetscReal, Vec, Vec, void*);
 extern PetscErrorCode LagrangeRHSFcn(TS, PetscReal, Vec, Vec, void*);
 extern PetscErrorCode LagrangeIFcn(TS, PetscReal, Vec, Vec, Vec, void*);
@@ -35,8 +36,8 @@ extern PetscErrorCode LagrangeIJac(TS, PetscReal, Vec, Vec, PetscReal,
 int main(int argc,char **argv) {
     PetscErrorCode ierr;
     PetscInt       steps;
-    PetscReal      t0 = 0.0, tf = 2.0, dt = 0.1;
-    Vec            u;
+    PetscReal      t0 = 0.0, tf = 2.0, dt = 0.1, errnorm;
+    Vec            u, u0, uexact;
     Mat            A; // not used with free,nspring
     TS             ts;
     TBCtx          user;
@@ -48,8 +49,8 @@ int main(int argc,char **argv) {
     user.newtonian = PETSC_FALSE;
     user.g = 9.81;
     user.m = 58.0e-3; // 58 g for a tennis ball
-    user.l = 0.2;
-    user.k = 20.0;
+    user.l = 0.2;     // spring/rod length (ignored by free)
+    user.k = 20.0;    // spring constant (ignored by free,spring)
     ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "tb_", "options for twoballs",
                              ""); CHKERRQ(ierr);
     ierr = PetscOptionsEnum("-connect","connect balls: free,spring,rod",
@@ -119,10 +120,26 @@ int main(int argc,char **argv) {
 
     // set initial values and solve
     ierr = SetInitial(u, &user); CHKERRQ(ierr);
-    ierr = TSSolve(ts,u); CHKERRQ(ierr);
+    ierr = TSSolve(ts, u); CHKERRQ(ierr);
+    ierr = TSGetTime(ts, &tf); CHKERRQ(ierr);
+
+    // numerical error in free case
+    if (user.connect == FREE) {
+        ierr = VecDuplicate(u, &uexact); CHKERRQ(ierr);
+        // get initial condition for evaluating exact solution
+        ierr = VecDuplicate(u, &u0); CHKERRQ(ierr);
+        ierr = SetInitial(u0, &user); CHKERRQ(ierr);
+        ierr = FreeExact(u0, tf, uexact, &user); CHKERRQ(ierr);
+        //ierr = VecView(uexact, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+        ierr = VecAXPY(u, -1.0, uexact); CHKERRQ(ierr); // u <- u - uexact
+        ierr = VecNorm(u, NORM_INFINITY, &errnorm); CHKERRQ(ierr);
+        VecDestroy(&u0);  VecDestroy(&uexact);
+        ierr = PetscPrintf(PETSC_COMM_WORLD,
+               "numerical error at tf in free problem: |u-uexact|_inf = %.5e\n",
+               errnorm); CHKERRQ(ierr);
+    }
 
     // report
-    ierr = TSGetTime(ts,&tf); CHKERRQ(ierr);
     ierr = TSGetStepNumber(ts,&steps); CHKERRQ(ierr);
     if (user.newtonian)
         strcpy(fstr, "Newtonian");
@@ -150,6 +167,31 @@ PetscErrorCode SetInitial(Vec u, TBCtx *user) {
         au[8] = 0.0;
     }
     ierr = VecRestoreArray(u,&au); CHKERRQ(ierr);
+    return 0;
+}
+
+PetscErrorCode FreeExact(Vec u0, PetscReal tf, Vec uexact, TBCtx *user) {
+    /* Exact solution based on parabolic motion.  Problem
+        m x'' = 0,       x(0) = x0,  x'(0) = v0
+        m y'' = - m g,   y(0) = y0,  y'(0) = w0
+    has solution
+        x(t) = x0 + v0 t,              x'(t) = v0,
+        y(t) = y0 + w0 t - (g/2) t^2,  y'(t) = w0 - g t    */
+    PetscErrorCode ierr;
+    PetscReal *au0, *auexact;
+    if (user->connect != FREE) {
+        SETERRQ(PETSC_COMM_SELF,7,"exact solution only implemented for free\n");
+    }
+    ierr = VecGetArray(u0, &au0); CHKERRQ(ierr);
+    ierr = VecGetArray(uexact, &auexact); CHKERRQ(ierr);
+    for (int o = 0; o < 8; o = o + 4) {  // 2nd mass has offset 4
+        auexact[0+o] = au0[0+o] + au0[2+o] * tf;
+        auexact[1+o] = au0[1+o] + au0[3+o] * tf - 0.5 * user->g * tf * tf;
+        auexact[2+o] = au0[2+o];
+        auexact[3+o] = au0[3+o] - user->g * tf;
+    }
+    ierr = VecRestoreArray(u0, &au0); CHKERRQ(ierr);
+    ierr = VecRestoreArray(uexact, &auexact); CHKERRQ(ierr);
     return 0;
 }
 
