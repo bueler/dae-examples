@@ -1,0 +1,25 @@
+0 TS dt 0.1 time 0.
+1 TS dt 0.0113176 time 0.0057925
+2 TS dt 0.0192499 time 0.0171101
+3 TS dt 0.0215155 time 0.03636
+4 TS dt 0.0299848 time 0.0578754
+5 TS dt 0.0475021 time 0.0878603
+6 TS dt 0.0950041 time 0.135362
+7 TS dt 0.144649 time 0.230366
+8 TS dt 0.213288 time 0.375016
+9 TS dt 0.358304 time 0.588304
+10 TS dt 0.526696 time 0.946608
+11 TS dt 0.526696 time 1.4733
+12 TS dt 1.05339 time 2.
+Vec Object: 1 MPI processes
+  type: seq
+30.
+11.3801
+15.
+-4.62
+20.
+2.38007
+10.
+-9.62
+0.
+Lagrangian free problem solved to tf = 2.000 (12 steps)

@@ -18,4 +18,4 @@
 17 TS dt 0.153826 time 1.84617
 18 TS dt 0.0476594 time 1.95234
 19 TS dt 0.084676 time 2.
-connect=nspring problem solved to tf = 2.000 with 19 steps
+Newtonian spring problem solved to tf = 2.000 (19 steps)
