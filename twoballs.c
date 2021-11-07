@@ -4,11 +4,14 @@ static char help[] = "ODE/DAE system solver example using TS.\n"
 "connected by a spring, or rigidly connected by a rod.  A Newtonian\n"
 "force formulation and a (constrained) Lagrangian dynamics formulation\n"
 "are implemented.  We use cartesian coordinates (x,y) and velocities\n"
-"(v=dx/dt,w=dy/dt). The system has dimension 8 or 9.\n\n";
+"(v=dx/dt,w=dy/dt). The system has dimension 8 (Newtonian) or 9\n"
+"(Lagrangian).\n\n";
 
-// DEBUG Jacobian for -tb_connect rod using one backward-Euler step:
-// ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.01 -ts_dt 0.01
-//    -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat
+// DEBUG check Jacobian for rod problem using one backward-Euler step:
+// ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat
+
+// DEBUG check BDF2 convergence in free problem:
+//for T in 2 3 4 5 7 8 9 10 11 12; do ./twoballs -tb_connect free -ts_type bdf -ts_rtol 1.0e-$T -ts_atol 1.0e-$T; done
 
 #include <petsc.h>
 
@@ -71,8 +74,6 @@ int main(int argc,char **argv) {
     ierr = PetscOptionsEnd(); CHKERRQ(ierr);
 
     ierr = VecCreate(PETSC_COMM_WORLD,&u); CHKERRQ(ierr);
-    // matrix A is not allocated, and ignored, for free,nspring
-    ierr = MatCreate(PETSC_COMM_WORLD,&A); CHKERRQ(ierr);
     ierr = TSCreate(PETSC_COMM_WORLD,&ts); CHKERRQ(ierr);
     ierr = TSSetApplicationContext(ts,&user); CHKERRQ(ierr);
     ierr = TSSetProblemType(ts,TS_NONLINEAR); CHKERRQ(ierr);
@@ -99,6 +100,7 @@ int main(int argc,char **argv) {
                 "spring is not YET implemented in Lagrangian formulation\n");
         }
         ierr = VecSetSizes(u,PETSC_DECIDE,9); CHKERRQ(ierr);
+        ierr = MatCreate(PETSC_COMM_WORLD,&A); CHKERRQ(ierr);
         ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,9,9); CHKERRQ(ierr);
         ierr = MatSetFromOptions(A); CHKERRQ(ierr);
         ierr = MatSetUp(A); CHKERRQ(ierr);
@@ -147,7 +149,9 @@ int main(int argc,char **argv) {
                "%s %s problem solved to tf = %.3f (%d steps)\n",
                fstr, ConnectTypes[user.connect], tf, steps); CHKERRQ(ierr);
 
-    VecDestroy(&u);  MatDestroy(&A);  TSDestroy(&ts);
+    if (!user.newtonian)
+        MatDestroy(&A);
+    VecDestroy(&u);  TSDestroy(&ts);
     return PetscFinalize();
 }
 
