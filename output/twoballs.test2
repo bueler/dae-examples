@@ -1,21 +1,15 @@
 0 TS dt 0.1 time 0.
-1 TS dt 0.0835973 time 0.0829937
-2 TS dt 0.0838883 time 0.166591
-3 TS dt 0.0953612 time 0.250479
-4 TS dt 0.125681 time 0.34584
-5 TS dt 0.154736 time 0.471522
-6 TS dt 0.158189 time 0.626258
-7 TS dt 0.143189 time 0.767269
-8 TS dt 0.128909 time 0.894219
-9 TS dt 0.116764 time 1.00936
-10 TS dt 0.105306 time 1.11288
-11 TS dt 0.0922927 time 1.20166
-12 TS dt 0.0888098 time 1.29396
-13 TS dt 0.0918288 time 1.38277
-14 TS dt 0.106571 time 1.4746
-15 TS dt 0.123045 time 1.58117
-16 TS dt 0.141963 time 1.70421
-17 TS dt 0.153826 time 1.84617
-18 TS dt 0.0476594 time 1.95234
-19 TS dt 0.084676 time 2.
-Newtonian spring problem solved to tf = 2.000 (19 steps)
+1 TS dt 0.123453 time 0.1
+2 TS dt 0.139495 time 0.223453
+3 TS dt 0.15261 time 0.362948
+4 TS dt 0.16177 time 0.515558
+5 TS dt 0.162511 time 0.677328
+6 TS dt 0.156235 time 0.839839
+7 TS dt 0.156542 time 0.996074
+8 TS dt 0.17817 time 1.15262
+9 TS dt 0.184956 time 1.33079
+10 TS dt 0.190891 time 1.51574
+11 TS dt 0.146683 time 1.70663
+12 TS dt 0.146683 time 1.85332
+13 TS dt 0.133931 time 2.
+Newtonian spring problem solved to tf = 2.000 (13 steps)
