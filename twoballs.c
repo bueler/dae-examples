@@ -10,7 +10,7 @@ static char help[] = "ODE/DAE system solver example using TS.\n"
 // DEBUG check Jacobian for rod problem using one backward-Euler step:
 // ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat
 
-// DEBUG check BDF2 convergence in free problem:
+// DEBUG check BDF2 convergence in free problem using Lagrangian formulation:
 //for T in 2 3 4 5 7 8 9 10 11 12; do ./twoballs -tb_connect free -ts_type bdf -ts_rtol 1.0e-$T -ts_atol 1.0e-$T; done
 
 #include <petsc.h>
@@ -52,7 +52,7 @@ int main(int argc,char **argv) {
     user.newtonian = PETSC_FALSE;
     user.g = 9.81;
     user.m = 58.0e-3; // 58 g for a tennis ball
-    user.l = 0.2;     // spring/rod length (ignored by free)
+    user.l = 0.5;     // spring/rod length, and determines initial condition
     user.k = 20.0;    // spring constant (ignored by free,spring)
     ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "tb_", "options for twoballs",
                              ""); CHKERRQ(ierr);
@@ -156,19 +156,34 @@ int main(int argc,char **argv) {
 }
 
 PetscErrorCode SetInitial(Vec u, TBCtx *user) {
-    PetscErrorCode ierr;
-    PetscReal *au;
+    /* Set initial conditions compatible with the rod constraint
+        (x1 - x2)^2 + (w1 - w2)^2 = l^2                     (1)
+    and its derivative
+        < x1-x2, y1-y2 > . < v1-v2, w1-w2 > = 0             (2)
+    and the derivative of that,
+        lambda = (m / (4 l^2)) ((v1-v2)^2 + (w1-w2)^2)      (3)
+    We adjust y2, w2, and lambda to satisfy these constraints.
+    The remaining values are set for convenience.  In fact
+    constraint (3) does not affect the backward Euler solution.  */
+    PetscErrorCode   ierr;
+    const PetscReal  c = user->m / (4.0 * user->l * user->l);
+    PetscReal        *au, dv, dw;
     ierr = VecGetArray(u,&au); CHKERRQ(ierr);
-    au[0] = 0.0;
-    au[1] = 1.0;
-    au[2] = 15.0;
-    au[3] = 15.0;
-    au[4] = 0.0;
-    au[5] = 2.0;
-    au[6] = 10.0;
-    au[7] = 10.0;
+    au[0] = 0.0;            // x1
+    au[1] = 1.0;            // y1
+    au[2] = 10.0;           // v1
+    au[3] = 10.0;           // w1
+    au[4] = 0.0;            // x2
+    au[5] = 1.0 + user->l;  // y2
+    au[6] = 15.0;           // v2
+    au[7] = au[3];          // w2
     if (!user->newtonian) {
-        au[8] = 0.0;
+        if (user->connect == ROD) {
+            dv = au[2] - au[6];
+            dw = au[3] - au[7];
+            au[8] = c * (dv * dv + dw * dw);
+        } else  // unconstrained FREE and SPRING cases
+            au[8] = 0.0;
     }
     ierr = VecRestoreArray(u,&au); CHKERRQ(ierr);
     return 0;
