@@ -157,7 +157,7 @@ int main(int argc,char **argv) {
 
 PetscErrorCode SetInitial(Vec u, TBCtx *user) {
     /* Set initial conditions compatible with the rod constraint
-        (x1 - x2)^2 + (w1 - w2)^2 = l^2                     (1)
+        (x1 - x2)^2 + (y1 - y2)^2 = l^2                     (1)
     and its derivative
         < x1-x2, y1-y2 > . < v1-v2, w1-w2 > = 0             (2)
     and the derivative of that,
