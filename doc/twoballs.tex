@@ -83,20 +83,24 @@ The problem of two equal-mass balls, rigidly connected by a massless rod, is des
 
 \section{Equations of motion}
 
-Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  Their cartesian coordinates form a configuration column vector
-    $$\bq(t) = \begin{bmatrix} q_1(t) \\ q_2(t) \\ q_3(t) \\ q_4(t) \end{bmatrix} = \begin{bmatrix} x_a(t) \\ y_a(t) \\ x_b(t) \\ y_b(t) \end{bmatrix}.$$
-Denote their velocities by $\bv$, thus $v_1 = \dot x_a$, $v_2=\dot y_a$, $v_3 = \dot x_b$, and $v_4=\dot y_b$:
-    $$\bv(t) = \dot\bq(t).$$
-
-Now suppose the two masses move according to two kinds of forces.  First we have constant gravity acting vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The locations of the two masses are now constrained to satisfy
-    $$(x_a - x_b)^2 + (y_a - y_b)^2 = \ell^2$$
-at any time.  Equivalently there is a scalar function of the coordinates which is identically zero:
+Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  Their cartesian position coordinates form a column vector
 \begin{equation}
-g(\bq) = \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) = 0. \label{constraint}
+\bq(t) = \begin{bmatrix} q_1(t) \\ q_2(t) \\ q_3(t) \\ q_4(t) \end{bmatrix} = \begin{bmatrix} x_a(t) \\ y_a(t) \\ x_b(t) \\ y_b(t) \end{bmatrix}. \label{position}
 \end{equation}
-(The overall constant $\frac{1}{2}$ is chosen for convenience.)  Physically speaking, the rod exerts some tension or expansion force between the masses, which varies during the motion.  Denoting it by a scalar $\lambda$, of either sign, but positive when the rod is pulling the two masses together, what is $\lambda$?  Furthermore, from the resulting total forces, what are the equations of motion?
+Denote their velocities by $\bv$, thus $v_1 = \dot x_a$, $v_2=\dot y_a$, $v_3 = \dot x_b$, and $v_4=\dot y_b$:
+\begin{equation}
+\bv(t) = \dot\bq(t). \label{velocity}
+\end{equation}
 
-Newton's original laws are poorly-suited to describing the forces in such a constrained situation.  However, Hamilton's principle of least action \cite[equation (52.1)]{Lanczos1970} applies.  First, for unconstrained motion described by the configuration variables $\bq(t) \in \RR^n$ and velocities $\bv(t) = \dot\bq$, one defines the \emph{Lagrangian} $\mathcal{L}(\bq,\bv) = T(\bq,\bv) - U(\bq)$, the difference of kinetic and potential energy.  The principle then says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system ($i=1,\dots,n$):
+Now suppose the two masses move according to two kinds of forces.  First we have constant gravity acting vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The locations of the two masses are now constrained to satisfy $(x_a - x_b)^2 + (y_a - y_b)^2 = \ell^2$ at any time.  That is, a certain scalar function of the coordinates is identically zero:
+\begin{equation}
+0 = g(\bq) = \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \label{constraint}
+\end{equation}
+(The overall constant $\frac{1}{2}$ is chosen for convenience.)
+
+Physically speaking, the rod exerts some tension or expansion force between the masses, which varies during the motion.  Denoting it by a scalar $\lambda$, of either sign, but positive when the rod is pulling the two masses together, what is $\lambda$?  Furthermore, from the resulting total forces, what are the equations of motion?
+
+Newton's original laws are poorly-suited to describing the forces in such a constrained situation.  However, Hamilton's principle of least action \cite[equation (52.1)]{Lanczos1970} applies.  First, for unconstrained motion described by the position variables $\bq(t) \in \RR^n$ and velocities $\bv(t) = \dot\bq$, one defines the \emph{Lagrangian} $\mathcal{L}(\bq,\bv) = T(\bq,\bv) - U(\bq)$, the difference of kinetic and potential energy.  The principle then says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system ($i=1,\dots,n$):
 \begin{equation}
 \frac{d}{dt} \frac{\partial \mathcal{L}}{\partial v_i} = \frac{\partial \mathcal{L}}{\partial q_i}. \label{eulerlagrange}
 \end{equation}
@@ -119,16 +123,11 @@ where $g_r>0$ is the acceleration of gravity.  Thus we define the modified Lagra
   &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) \notag \\
   &\qquad - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
 \end{align}
-The Euler-Lagrange system \eqref{eulerlagrange} is now a set of 4 equations:
-\begin{align*}
-m \dot v_1 &= - \lambda (q_1 - q_3) \\
-m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
-m \dot v_3 &= \lambda (q_1 - q_3) \\
-m \dot v_4 &= - m g_r + \lambda (q_2 - q_4)
-\end{align*}
 
-In total, however, our constrained two-masses problem is a system of 9 first-order differential equations.  It includes the definition of the velocities and the constraint \eqref{constraint} itself:
-\begin{align*}
+Note that the Euler-Lagrange system \eqref{eulerlagrange} is a set of $n=4$ scalar equations.  In total, however, our constrained two-masses problem is a system of 9 first-order differential equations.  It includes the definition of the velocities and the constraint \eqref{constraint} itself:
+\begin{subequations}
+\label{rawsystem}
+\begin{align}
   \dot q_1 &= v_1 \\
   \dot q_2 &= v_2 \\
   \dot q_3 &= v_3 \\
@@ -137,25 +136,49 @@ m \dot v_1 &= - \lambda (q_1 - q_3) \\
 m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
 m \dot v_3 &= \lambda (q_1 - q_3) \\
 m \dot v_4 &= - m g_r + \lambda (q_2 - q_4) \\
-         0 &= \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)
-\end{align*}
-
-In anticipation of the theory in reference \cite{AscherPetzold1998}, wherein our type of system appears as equation (9.30), we prefer to write the system using vectors and matrices:
-\begin{align}
-\dot \bq &= \bv \notag \\
-m \dot \bv &= \bbf - \lambda\, G(\bq)^\top \label{system} \\
-0 &= g(\bq) \notag
+         0 &= \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) \label{rawsystem:constraint}
 \end{align}
-Here the column vector $\bbf = [0,-mg_r,0,-mg_r]^\top$ is the constant force of gravity and $G$ is a $k\times n = 1\times n$ Jacobian matrix:
+\end{subequations}
+
+In anticipation of the theory in reference \cite{AscherPetzold1998}, wherein our type of system appears as equation (9.30), we prefer to rewrite \eqref{rawsystem} using vectors and matrices:
+\begin{subequations}
+\label{system}
+\begin{align}
+\dot \bq &= \bv  \label{system:dotq} \\
+m \dot \bv &= \bbf - \lambda\, G(\bq)^\top  \label{system:dotv} \\
+0 &= g(\bq)  \label{system:constraint}
+\end{align}
+\end{subequations}
+The column vector $\bbf = [0,-mg_r,0,-mg_r]^\top$ is the (constant) external force and the Jacobian matrix $G$ is a row vector
 \begin{equation}
 G(\bq) = \begin{bmatrix} \frac{\partial g}{\partial q_i} \end{bmatrix} = \begin{bmatrix} q_1-q_3, & q_2-q_4, & -(q_1-q_3), & -(q_2-q_4) \end{bmatrix}. \label{constraintjacobian}
 \end{equation}
-(Reference \cite{AscherPetzold1998} allows a mass matrix $M(\bq)$, but in our case $M(\bq) = mI$.)
+($G$ is a $k\times n$ matrix in the general case.  The notation in reference \cite{AscherPetzold1998} allows a nontrivial mass matrix in \eqref{system:dotv}, but here it is scalar and constant: $M(\bq) = mI$.)
 
-System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~by any typical adaptive Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have done it in cartesian coordinates, our problem is a \emph{differential-algebraic equation} (DAE) system.  This is interesting.
+System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~any adaptive Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have done it in cartesian coordinates, our problem is a \emph{differential-algebraic equation} (DAE) system.  The first 8 scalar equations in \eqref{rawsystem} are differential equations but equation \eqref{rawsystem:constraint} is algebraic.  This is interesting.
 
 
-\section{Index and index reduction}  FIXME
+\section{Index and index reduction}  Some DAE systems are harder than others, but the various difficulties are neither simple to describe nor particularly easy to quantify.  One measurement which has time-proven value is the \emph{index} of the DAE system.  This nonnegative integer is the minimum number of times that the algebraic equations, the constraints, must be differentiated in time before substitutions reveal an ODE system.  (An ODE system has index 0.)  While this is not obviously a rigorous definition, the linear case is, at least, precise; see \cite[section FIXME]{HairerWanner1996}.
+
+Our DAE problem \eqref{system} is a mechanical system with equality constraints on the position variables, ``holonomic constraints'' \cite{Lanczos1970}, a class of DAE problems well-known to have index 3.  Indeed it is a ``high index'' system; traditionally this means index larger than 2.
+
+Let us show, by differentiating $g(\bq)=0$ with respect to time, that \eqref{system} has at most index 3.  (Our argument will not exclude getting to an ODE in fewer steps, but the literature suggests no reason to suppose it.)  Differentiating \eqref{system:constraint} once with respect to $t$ gives
+\begin{align}
+0 &= \frac{d}{dt} \bigg(\frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)\bigg) \label{rawdconstraint} \\
+  &= (q_1 - q_3)(\dot q_1 - \dot q_3) + (q_2 - q_4) (\dot q_2 - \dot q_4), \notag \\
+  &= (q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4), \notag
+\end{align}
+which, by substituting \eqref{system:dotq} and \eqref{constraintjacobian}, we may write as a matrix-vector product:
+\begin{equation}
+0 = G(\bq) \bv. \label{dconstraint}
+\end{equation}
+
+Differentiating again:
+\begin{align}
+0 &= \frac{d}{dt} \Big((q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)\Big)  \label{rawddconstraint} \\
+  &= (v_1 - v_3)^2 + (q_1 - q_3) (\dot v_1 - \dot v_3) + (v_2 - v_4)^2 + (q_2 - q_4) (\dot v_2 - \dot v_4).  \notag
+\end{align}
+FIXME
 
 
 \section{Stabilized index 2 formulation}  FIXME Exercise 9.10 in \cite{AscherPetzold1998}; see also \cite{Gearetal1985}
