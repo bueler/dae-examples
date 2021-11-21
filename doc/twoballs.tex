@@ -1,0 +1,173 @@
+\documentclass[letterpaper,final,12pt,reqno]{amsart}
+
+\usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
+
+\usepackage{times,bm,bbm,empheq,verbatim,fancyvrb,graphicx}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage[kw]{pseudo}
+
+\pseudoset{left-margin=15mm,topsep=5mm,idfont=\texttt}
+
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathreplacing}
+
+% hyperref should be the last package we load
+\usepackage[pdftex,
+colorlinks=true,
+plainpages=false, % only if colorlinks=true
+linkcolor=blue,   % ...
+citecolor=Red,    % ...
+urlcolor=black    % ...
+]{hyperref}
+
+\DefineVerbatimEnvironment{cline}{Verbatim}{fontsize=\small,xleftmargin=5mm}
+
+\renewcommand{\baselinestretch}{1.05}
+
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\Matlab}{\textsc{Matlab}\xspace}
+\newcommand{\eps}{\epsilon}
+\newcommand{\RR}{\mathbb{R}}
+
+\newcommand{\grad}{\nabla}
+\newcommand{\Div}{\nabla\cdot}
+\newcommand{\trace}{\operatorname{tr}}
+
+\newcommand{\hbn}{\hat{\mathbf{n}}}
+
+\newcommand{\bb}{\mathbf{b}}
+\newcommand{\be}{\mathbf{e}}
+\newcommand{\bbf}{\mathbf{f}}
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\bn}{\mathbf{n}}
+\newcommand{\bq}{\mathbf{q}}
+\newcommand{\br}{\mathbf{r}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\bx}{\mathbf{x}}
+
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bX}{\mathbf{X}}
+
+\newcommand{\bxi}{\bm{\xi}}
+
+\newcommand{\blambda}{\bm{\lambda}}
+\newcommand{\bzero}{\bm{0}}
+
+\newcommand{\rhoi}{\rho_{\text{i}}}
+\newcommand{\ip}[2]{\left<#1,#2\right>}
+
+\newcommand{\Rpr}{R_{\text{pr}}}
+\newcommand{\Rin}{R_{\text{in}}}
+\newcommand{\Rfw}{R_{\text{fw}}}
+
+
+\begin{document}
+\title[Two balls connected by a rod]{Two balls connected by a rod: \\ an index 3 differential-algebraic equations case study.}
+
+\author{Ed Bueler}
+
+\begin{abstract}
+The problem of two equal-mass balls, rigidly connected by a massless rod, is described by an index-3 differential-algebraic equations (DAE) system.  Numerical solutions based on an index-2 stabilized form and implicit PETSc TS solvers are evaluated.
+\end{abstract}
+
+\maketitle
+
+%\tableofcontents
+
+\thispagestyle{empty}
+\bigskip
+
+\section{Equations of motion}
+
+Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  In obvious notation their cartesian coordinates form a vector
+    $$\bq(t) = \begin{bmatrix} q_1(t) \\ q_2(t) \\ q_3(t) \\ q_4(t) \end{bmatrix} = \begin{bmatrix} x_a(t) \\ y_a(t) \\ x_b(t) \\ y_b(t) \end{bmatrix}.$$
+Denote their velocities by $\bv$, thus $v_1 = \dot x_a$, $v_2=\dot y_a$, $v_3 = \dot x_b$, and $v_4=\dot y_b$:
+    $$\bv(t) = \dot\bq(t) = \begin{bmatrix} {\large\strut} v_i(t) \end{bmatrix}$$
+
+Now suppose the two masses move according to two kinds of forces.  First we have constant gravity acting vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The locations of the two masses are now constrained at every time to satisfy
+    $$(x_a - x_b)^2 + (y_a - y_b)^2 = \ell^2$$
+or equivalently there is a scalar function of the coordinates which is identically zero:
+\begin{equation}
+g(\bq) = \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) = 0. \label{constraint}
+\end{equation}
+(The overall constant is chosen for later convenience.)
+
+Physically speaking, the rod exerts some tension or compression force between the masses, and it may vary during the motion.  We will denote it by a scalar $\lambda$, of either sign, and positive when the rod is pulling the two masses together.  What is this tension?  From the resulting total forces, what are the equations of motion of the masses?
+
+Newton's original laws are poorly-suited to describing the forces in such a constrained situation, but the Hamilton's principle of least action \cite[equation (52.1)]{Lanczos1970} applies.  Now, for unconstrained motion described by the configuration variables $\bq(t) \in \RR^n$ and velocities $\bv = \dot\bq$, we define the \emph{Lagrangian} $\mathcal{L}(\bq,\bv) = T(\bq,\bv) - U(\bq)$, the difference of the kinetic energy $T$ and the potential energy $V$.  The principle says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system
+\begin{equation}
+\frac{d}{dt} \frac{\partial \mathcal{L}}{\partial v_i} = \frac{\partial \mathcal{L}}{\partial q_i} \label{eulerlagrange}
+\end{equation}
+for $i=1,\dots,n$.
+
+For constrained motion we may use Hamilton's principle after modifying the Lagrangian.  Assuming $\bg(\bq) \in \RR^k$ is the (generally) vector-valued function of the constraints $\bg(\bq)=\bzero$, a vector of Lagrange multipliers $\blambda=\blambda(t) \in \RR^k$ is used to define a new potential energy \cite[equation (58.2)]{Lanczos1970}
+\begin{equation}
+\tilde U(\bq,\blambda) = U(\bq) + \blambda^\top \bg(\bq), \label{extendedpotential}
+\end{equation}
+and $\mathcal{L}(\bq,\bv,\blambda) = T(\bq,\bv) - \tilde U(\bq,\blambda)$.  Then the motion follows a curve $\bq(t)$ defined by the system of equations constructed from \eqref{eulerlagrange} along with the constraints $\bg(\bq)=\bzero$.
+
+Observe that, because the modified Lagrangian does not depend on $\dot\blambda$, one may recover the constraints by the notional equation $d/dt(\partial \mathcal{L}/\partial \dot\blambda) = \partial \mathcal{L}/\partial\blambda$, and in this sense the multipliers are treated as coordinates.  Physically, however, $\blambda$ is the vector force of constraint, that is, which enforces $\bg(\bq)=\bzero$.
+
+\smallskip
+In our two-masses problem with $n=4$ there is $k=1$ (scalar) constraint $g(\bq)$ and thus one Lagrange multiplier $\lambda$ which is the tension we seek.  Based on the usual formulas for kinetic energy, which is independent of the cartesian coordinate $\bq$, and gravitational potential energy,
+\begin{equation}
+T(\bv) = \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right), \qquad U(\bq) = m g_r \left(q_2+q_4\right), \label{energies}
+\end{equation}
+where $g_r>0$ is the acceleration of gravity, we define the Lagrangian
+\begin{align}
+\mathcal{L}(\bq,\bv,\lambda) &= T(\bq,\bv) - V(\bq) - \lambda g(\bq) \label{lagrangian} \\
+  &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
+\end{align}
+The Euler-Lagrange system \eqref{eulerlagrange} is a set of 4 equations:
+\begin{align*}
+m \dot v_1 &= - \lambda (q_1 - q_3) \\
+m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
+m \dot v_3 &= \lambda (q_1 - q_3) \\
+m \dot v_4 &= - m g_r + \lambda (q_2 - q_4)
+\end{align*}
+
+In total our constrained two-masses problem is a system of 9 first-order differential equations by including the definition of the velocities $v_i = \dot q_i$ and the constraint \eqref{constraint} itself:
+\begin{align*}
+  \dot q_1 &= v_1 \\
+  \dot q_2 &= v_2 \\
+  \dot q_3 &= v_3 \\
+  \dot q_4 &= v_4 \\
+m \dot v_1 &= - \lambda (q_1 - q_3) \\
+m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
+m \dot v_3 &= \lambda (q_1 - q_3) \\
+m \dot v_4 &= - m g_r + \lambda (q_2 - q_4) \\
+         0 &= \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)
+\end{align*}
+
+In anticipation of the theory in reference \cite{AscherPetzold1998}, wherein our type of system appears as equation (9.30), we prefer to write the system using vectors and matrices:
+\begin{align}
+\dot \bq &= \bv \notag \\
+M \dot \bv &= \bbf - \lambda\, G^\top(\bq) \label{system} \\
+0 &= g(\bq) \notag
+\end{align}
+FIXME EXPLAIN NOTATION
+
+System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~by an adaptive explicit Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have in cartesian coordinates, our problem is a \emph{differential-algebraic equations} (DAE) system, which is more interesting.
+
+
+\section{Index and index reduction}  FIXME
+
+
+\section{Stabilized index 2 formulation}  FIXME Exercise 9.10 in \cite{AscherPetzold1998}; see also \cite{Gearetal1985}
+
+
+\section{Numerical solution}
+
+FIXME Uses PETSc TS \cite{Balayetal2021,Bueler2021}, starting with BDF
+
+\small
+
+\bigskip
+\bibliography{twoballs}
+\bibliographystyle{siam}
+
+\end{document}

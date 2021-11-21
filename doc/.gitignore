@@ -1,0 +1,16 @@
+/twoballs.pdf
+
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.dvi
+
+*.bbl
+*.blg
+
+*.nav
+*.vrb
+*.snm
+
