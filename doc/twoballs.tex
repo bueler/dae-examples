@@ -66,7 +66,7 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Two balls connected by a rod]{Two balls connected by a rod: \\ an index 3 differential-algebraic equations case study.}
+\title[Two balls connected by a rod]{Two balls connected by a rod: an index 3 DAE case study.}
 
 \author{Ed Bueler}
 
@@ -158,7 +158,9 @@ G(\bq) = \begin{bmatrix} \frac{\partial g}{\partial q_i} \end{bmatrix} = \begin{
 System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~any adaptive Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have done it in cartesian coordinates, our problem is a \emph{differential-algebraic equation} (DAE) system.  The first 8 scalar equations in \eqref{rawsystem} are differential equations but equation \eqref{rawsystem:constraint} is algebraic.  This is interesting.
 
 
-\section{Index and index reduction}  Some DAE systems are harder than others, but the various difficulties are neither simple to describe nor particularly easy to quantify.  One measurement which has time-proven value is the \emph{index} of the DAE system.  This nonnegative integer is the minimum number of times that the algebraic equations, the constraints, must be differentiated in time before substitutions reveal an ODE system.  (An ODE system has index 0.)  While this is not obviously a rigorous definition, the linear case is, at least, precise; see \cite[section FIXME]{HairerWanner1996}.
+\section{DAE index}
+
+Some DAE systems are harder than others, but the various difficulties are neither simple to describe nor particularly easy to quantify.  One measurement which has time-proven value is the \emph{index} of the DAE system.  This nonnegative integer is the minimum number of times that the algebraic equations, the constraints, must be differentiated in time before substitutions reveal an ODE system.  (An ODE system has index 0.)  While this is not obviously a rigorous definition, the linear case is, at least, precise; see \cite[section FIXME]{HairerWanner1996}.
 
 Our DAE problem \eqref{system} is a mechanical system with equality constraints on the position variables, ``holonomic constraints'' \cite{Lanczos1970}, a class of DAE problems well-known to have index 3.  Indeed it is a ``high index'' system; traditionally this means index larger than 2.
 
