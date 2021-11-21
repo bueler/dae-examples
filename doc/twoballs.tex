@@ -83,46 +83,43 @@ The problem of two equal-mass balls, rigidly connected by a massless rod, is des
 
 \section{Equations of motion}
 
-Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  In obvious notation their cartesian coordinates form a vector
+Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  Their cartesian coordinates form a configuration column vector
     $$\bq(t) = \begin{bmatrix} q_1(t) \\ q_2(t) \\ q_3(t) \\ q_4(t) \end{bmatrix} = \begin{bmatrix} x_a(t) \\ y_a(t) \\ x_b(t) \\ y_b(t) \end{bmatrix}.$$
 Denote their velocities by $\bv$, thus $v_1 = \dot x_a$, $v_2=\dot y_a$, $v_3 = \dot x_b$, and $v_4=\dot y_b$:
-    $$\bv(t) = \dot\bq(t) = \begin{bmatrix} {\large\strut} v_i(t) \end{bmatrix}$$
+    $$\bv(t) = \dot\bq(t).$$
 
-Now suppose the two masses move according to two kinds of forces.  First we have constant gravity acting vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The locations of the two masses are now constrained at every time to satisfy
+Now suppose the two masses move according to two kinds of forces.  First we have constant gravity acting vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The locations of the two masses are now constrained to satisfy
     $$(x_a - x_b)^2 + (y_a - y_b)^2 = \ell^2$$
-or equivalently there is a scalar function of the coordinates which is identically zero:
+at any time.  Equivalently there is a scalar function of the coordinates which is identically zero:
 \begin{equation}
 g(\bq) = \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) = 0. \label{constraint}
 \end{equation}
-(The overall constant is chosen for later convenience.)
+(The overall constant $\frac{1}{2}$ is chosen for convenience.)  Physically speaking, the rod exerts some tension or expansion force between the masses, which varies during the motion.  Denoting it by a scalar $\lambda$, of either sign, but positive when the rod is pulling the two masses together, what is $\lambda$?  Furthermore, from the resulting total forces, what are the equations of motion?
 
-Physically speaking, the rod exerts some tension or compression force between the masses, and it may vary during the motion.  We will denote it by a scalar $\lambda$, of either sign, and positive when the rod is pulling the two masses together.  What is this tension?  From the resulting total forces, what are the equations of motion of the masses?
-
-Newton's original laws are poorly-suited to describing the forces in such a constrained situation, but the Hamilton's principle of least action \cite[equation (52.1)]{Lanczos1970} applies.  Now, for unconstrained motion described by the configuration variables $\bq(t) \in \RR^n$ and velocities $\bv = \dot\bq$, we define the \emph{Lagrangian} $\mathcal{L}(\bq,\bv) = T(\bq,\bv) - U(\bq)$, the difference of the kinetic energy $T$ and the potential energy $V$.  The principle says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system
+Newton's original laws are poorly-suited to describing the forces in such a constrained situation.  However, Hamilton's principle of least action \cite[equation (52.1)]{Lanczos1970} applies.  First, for unconstrained motion described by the configuration variables $\bq(t) \in \RR^n$ and velocities $\bv(t) = \dot\bq$, one defines the \emph{Lagrangian} $\mathcal{L}(\bq,\bv) = T(\bq,\bv) - U(\bq)$, the difference of kinetic and potential energy.  The principle then says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system ($i=1,\dots,n$):
 \begin{equation}
-\frac{d}{dt} \frac{\partial \mathcal{L}}{\partial v_i} = \frac{\partial \mathcal{L}}{\partial q_i} \label{eulerlagrange}
+\frac{d}{dt} \frac{\partial \mathcal{L}}{\partial v_i} = \frac{\partial \mathcal{L}}{\partial q_i}. \label{eulerlagrange}
 \end{equation}
-for $i=1,\dots,n$.
 
-For constrained motion we may use Hamilton's principle after modifying the Lagrangian.  Assuming $\bg(\bq) \in \RR^k$ is the (generally) vector-valued function of the constraints $\bg(\bq)=\bzero$, a vector of Lagrange multipliers $\blambda=\blambda(t) \in \RR^k$ is used to define a new potential energy \cite[equation (58.2)]{Lanczos1970}
+For constrained motion we may also use Hamilton's principle, but only after modifying the Lagrangian.  In general cases one assumes $\bg(\bq) \in \RR^k$ is a column vector of the constraints, i.e.~$\bg(\bq)=\bzero$, and one supposes a (column) vector of Lagrange multipliers $\blambda(t) \in \RR^k$.  This defines a new potential energy \cite[equation (58.2)]{Lanczos1970},
 \begin{equation}
 \tilde U(\bq,\blambda) = U(\bq) + \blambda^\top \bg(\bq), \label{extendedpotential}
 \end{equation}
-and $\mathcal{L}(\bq,\bv,\blambda) = T(\bq,\bv) - \tilde U(\bq,\blambda)$.  Then the motion follows a curve $\bq(t)$ defined by the system of equations constructed from \eqref{eulerlagrange} along with the constraints $\bg(\bq)=\bzero$.
+and a modified Lagrangian $\mathcal{L}(\bq,\bv,\blambda) = T(\bq,\bv) - \tilde U(\bq,\blambda)$.  Then the motion $\bq(t),\bv(t),\blambda(t)$ satisfies the system \eqref{eulerlagrange} along with the constraints.
 
-Observe that, because the modified Lagrangian does not depend on $\dot\blambda$, one may recover the constraints by the notional equation $d/dt(\partial \mathcal{L}/\partial \dot\blambda) = \partial \mathcal{L}/\partial\blambda$, and in this sense the multipliers are treated as coordinates.  Physically, however, $\blambda$ is the vector force of constraint, that is, which enforces $\bg(\bq)=\bzero$.
+Observe that, because the modified Lagrangian does not depend on $\dot\blambda$, one may recover the constraints by the notional equation $\bzero = d/dt(\partial \mathcal{L}/\partial \dot\blambda) = \partial \mathcal{L}/\partial\blambda = \bg(\bq)$.  In this sense the multipliers are treated as coordinates and the Euler-Lagrange equations now include the constraints.  Physically, however, $\blambda$ is the (vector) force which enforces the constraints.
 
-\smallskip
-In our two-masses problem with $n=4$ there is $k=1$ (scalar) constraint $g(\bq)$ and thus one Lagrange multiplier $\lambda$ which is the tension we seek.  Based on the usual formulas for kinetic energy, which is independent of the cartesian coordinate $\bq$, and gravitational potential energy,
+In our two-masses problem with $n=4$ there is $k=1$ (scalar) constraint $g(\bq)$ and thus one Lagrange multiplier $\lambda$.  It is the rod tension which we seek!  Based on the usual formula for kinetic energy, independent of the cartesian coordinate $\bq$, and on gravitational potential energy, we have
 \begin{equation}
 T(\bv) = \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right), \qquad U(\bq) = m g_r \left(q_2+q_4\right), \label{energies}
 \end{equation}
-where $g_r>0$ is the acceleration of gravity, we define the Lagrangian
+where $g_r>0$ is the acceleration of gravity.  Thus we define the modified Lagrangian
 \begin{align}
 \mathcal{L}(\bq,\bv,\lambda) &= T(\bq,\bv) - V(\bq) - \lambda g(\bq) \label{lagrangian} \\
-  &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
+  &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) \notag \\
+  &\qquad - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
 \end{align}
-The Euler-Lagrange system \eqref{eulerlagrange} is a set of 4 equations:
+The Euler-Lagrange system \eqref{eulerlagrange} is now a set of 4 equations:
 \begin{align*}
 m \dot v_1 &= - \lambda (q_1 - q_3) \\
 m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
@@ -130,7 +127,7 @@ m \dot v_3 &= \lambda (q_1 - q_3) \\
 m \dot v_4 &= - m g_r + \lambda (q_2 - q_4)
 \end{align*}
 
-In total our constrained two-masses problem is a system of 9 first-order differential equations by including the definition of the velocities $v_i = \dot q_i$ and the constraint \eqref{constraint} itself:
+In total, however, our constrained two-masses problem is a system of 9 first-order differential equations.  It includes the definition of the velocities and the constraint \eqref{constraint} itself:
 \begin{align*}
   \dot q_1 &= v_1 \\
   \dot q_2 &= v_2 \\
@@ -146,12 +143,16 @@ m \dot v_4 &= - m g_r + \lambda (q_2 - q_4) \\
 In anticipation of the theory in reference \cite{AscherPetzold1998}, wherein our type of system appears as equation (9.30), we prefer to write the system using vectors and matrices:
 \begin{align}
 \dot \bq &= \bv \notag \\
-M \dot \bv &= \bbf - \lambda\, G^\top(\bq) \label{system} \\
+m \dot \bv &= \bbf - \lambda\, G(\bq)^\top \label{system} \\
 0 &= g(\bq) \notag
 \end{align}
-FIXME EXPLAIN NOTATION
+Here the column vector $\bbf = [0,-mg_r,0,-mg_r]^\top$ is the constant force of gravity and $G$ is a $k\times n = 1\times n$ Jacobian matrix:
+\begin{equation}
+G(\bq) = \begin{bmatrix} \frac{\partial g}{\partial q_i} \end{bmatrix} = \begin{bmatrix} q_1-q_3, & q_2-q_4, & -(q_1-q_3), & -(q_2-q_4) \end{bmatrix}. \label{constraintjacobian}
+\end{equation}
+(Reference \cite{AscherPetzold1998} allows a mass matrix $M(\bq)$, but in our case $M(\bq) = mI$.)
 
-System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~by an adaptive explicit Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have in cartesian coordinates, our problem is a \emph{differential-algebraic equations} (DAE) system, which is more interesting.
+System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~by any typical adaptive Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have done it in cartesian coordinates, our problem is a \emph{differential-algebraic equation} (DAE) system.  This is interesting.
 
 
 \section{Index and index reduction}  FIXME
