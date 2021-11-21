@@ -119,7 +119,7 @@ T(\bv) = \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right), \qquad U(\bq) = m g_r
 \end{equation}
 where $g_r>0$ is the acceleration of gravity.  Thus we define the modified Lagrangian
 \begin{align}
-\mathcal{L}(\bq,\bv,\lambda) &= T(\bq,\bv) - V(\bq) - \lambda g(\bq) \label{lagrangian} \\
+\mathcal{L}(\bq,\bv,\lambda) &= T(\bv) - U(\bq) - \lambda g(\bq) \label{lagrangian} \\
   &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) \notag \\
   &\qquad - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
 \end{align}
@@ -153,37 +153,96 @@ The column vector $\bbf = [0,-mg_r,0,-mg_r]^\top$ is the (constant) external for
 \begin{equation}
 G(\bq) = \begin{bmatrix} \frac{\partial g}{\partial q_i} \end{bmatrix} = \begin{bmatrix} q_1-q_3, & q_2-q_4, & -(q_1-q_3), & -(q_2-q_4) \end{bmatrix}. \label{constraintjacobian}
 \end{equation}
-($G$ is a $k\times n$ matrix in the general case.  The notation in reference \cite{AscherPetzold1998} allows a nontrivial mass matrix in \eqref{system:dotv}, but here it is scalar and constant: $M(\bq) = mI$.)
+($G$ is a $k\times n$ matrix in the general case.)  The notation in reference \cite{AscherPetzold1998} allows a nontrivial mass matrix in \eqref{system:dotv}, but here it is scalar and constant: $M(\bq) = mI$.  For future reference note that
+\begin{equation}
+G(\bq) G(\bq)^\top = 2 (q_1-q_3)^2 + 2 (q_2 - q_4)^2 = 2 \ell^2 > 0.  \label{ggpd}
+\end{equation}
 
-System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~any adaptive Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have done it in cartesian coordinates, our problem is a \emph{differential-algebraic equation} (DAE) system.  The first 8 scalar equations in \eqref{rawsystem} are differential equations but equation \eqref{rawsystem:constraint} is algebraic.  This is interesting.
+System \eqref{system} would be suitable for numerical solution by a black-box ODE solver, e.g.~any adaptive explicit Runge-Kutta method \cite{AscherPetzold1998}, except that the constraint $0=g(\bq)$ is not, in fact, a differential equation at all.  Formulated as we have done it in cartesian coordinates, our problem is a \emph{differential-algebraic equation} (DAE) system.  The first 8 scalar equations in \eqref{rawsystem} are differential equations but equation \eqref{rawsystem:constraint} is algebraic, so application of an implicit solver, one which solves the discretized equations at each time step, is necessary.
 
 
 \section{DAE index}
 
-Some DAE systems are harder than others, but the various difficulties are neither simple to describe nor particularly easy to quantify.  One measurement which has time-proven value is the \emph{index} of the DAE system.  This nonnegative integer is the minimum number of times that the algebraic equations, the constraints, must be differentiated in time before substitutions reveal an ODE system.  (An ODE system has index 0.)  While this is not obviously a rigorous definition, the linear case is, at least, precise; see \cite[section FIXME]{HairerWanner1996}.
+Some DAE systems are more difficult than others, but the possibilities are neither simple to describe nor particularly easy to quantify.  One measurement which has time-proven value is the \emph{index} of the DAE system.  This nonnegative integer is the minimum number of times that the algebraic equations, the constraints, must be differentiated in time before substitutions reveal an ODE system.  (An ODE system has index 0.)  While this is not obviously a rigorous definition, the linear case is, at least, precise \cite[Chapter IV.5]{HairerWanner1996}.
 
-Our DAE problem \eqref{system} is a mechanical system with equality constraints on the position variables, ``holonomic constraints'' \cite{Lanczos1970}, a class of DAE problems well-known to have index 3.  Indeed it is a ``high index'' system; traditionally this means index larger than 2.
+Our DAE problem \eqref{system} is a mechanical system with equality constraints on the position variables (``holonomic constraints'' \cite{Lanczos1970}).  This class of DAE problems is well-known to have index 3.  Indices higher than 2 are traditionally called ``high index'' because much less is known about reliable numerical solvers beyond index 2.
 
-Let us show, by differentiating $g(\bq)=0$ with respect to time, that \eqref{system} has at most index 3.  (Our argument will not exclude getting to an ODE in fewer steps, but the literature suggests no reason to suppose it.)  Differentiating \eqref{system:constraint} once with respect to $t$ gives
+Let us show, by differentiating $g(\bq)=0$ with respect to time, that \eqref{system} has index 3.  (The argument here will not exclude generating an ODE in fewer differentiations, so in fact we show the index is at most 3.)  Differentiating \eqref{system:constraint} once with respect to $t$ gives
 \begin{align}
-0 &= \frac{d}{dt} \bigg(\frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)\bigg) \label{rawdconstraint} \\
+0 &= \frac{d}{dt} \bigg(\frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)\bigg) \notag \\
   &= (q_1 - q_3)(\dot q_1 - \dot q_3) + (q_2 - q_4) (\dot q_2 - \dot q_4), \notag \\
-  &= (q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4), \notag
+  &= (q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4). \label{rawvelocityconstraint}
 \end{align}
-which, by substituting \eqref{system:dotq} and \eqref{constraintjacobian}, we may write as a matrix-vector product:
+By substituting \eqref{system:dotq} and \eqref{constraintjacobian}, we may write this as a matrix-vector product:
 \begin{equation}
-0 = G(\bq) \bv. \label{dconstraint}
+0 = G(\bq) \bv. \label{velocityconstraint}
+\end{equation}
+This equation is called the \emph{velocity constraint}
+
+Differentiating again, then substitution of \eqref{system:dotv}, yields:
+\begin{align}
+0 &= \frac{d}{dt} \Big((q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)\Big) \notag \\
+  &= (v_1 - v_3)^2 + (q_1 - q_3) (\dot v_1 - \dot v_3) + (v_2 - v_4)^2 + (q_2 - q_4) (\dot v_2 - \dot v_4)  \notag \\
+  &= (v_1 - v_3)^2 + (v_2 - v_4)^2 - \frac{2\lambda}{m} \left((q_1 - q_3)^2 + (q_2 - q_4)^2\right) \notag \\
+  &= (v_1 - v_3)^2 + (v_2 - v_4)^2 - \lambda \frac{2 \ell^2}{m}, \label{rawddconstraint}
+\end{align}
+thus
+\begin{equation}
+\lambda = \frac{m}{2\ell^2} \left((v_1 - v_3)^2 + (v_2 - v_4)^2\right). \label{rawlambda}
 \end{equation}
 
-Differentiating again:
+How to write this part of the derivation using matrix-vector notation is not so obvious, but if we note $G(\bq)\bv = \sum_{i=1}^4 G_{1i}(\bq) v_i$, and we substitute \eqref{system:dotv}, and note $G(\bq) \bbf = 0$, then the same result is
 \begin{align}
-0 &= \frac{d}{dt} \Big((q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)\Big)  \label{rawddconstraint} \\
-  &= (v_1 - v_3)^2 + (q_1 - q_3) (\dot v_1 - \dot v_3) + (v_2 - v_4)^2 + (q_2 - q_4) (\dot v_2 - \dot v_4).  \notag
+0 &= \sum_{i,j=1}^4 \frac{\partial G_{1i}(\bq)}{\partial q_j} \dot q_j v_i + \sum_{i=1}^4 G_{1i}(\bq) \dot v_i \notag \\
+  &= \bv^\top \frac{\partial G(\bq)}{\partial \bq} \bv + G(\bq) \frac{1}{m} \left(\bbf - \lambda\, G(\bq)^\top\right) \notag \\
+  &= \frac{\partial (G(\bq)\bv)}{\partial \bq} \bv +  \frac{G(\bq)}{m} \bbf - \lambda \frac{G(\bq) G(\bq)^\top}{m} \notag \\
+  &= \frac{\partial (G(\bq)\bv)}{\partial \bq} \bv - \lambda \frac{G(\bq) G(\bq)^\top}{m}.  \label{ddconstraint}
 \end{align}
-FIXME
+Here
+\begin{equation}
+\left(\frac{\partial G(\bq)}{\partial \bq}\right)_{ij} = \frac{\partial G_{1i}(\bq)}{\partial q_j} \qquad \text{and} \qquad
+\left(\frac{\partial (G(\bq)\bv)}{\partial \bq}\right)_{j} = \frac{\partial G_{1i}(\bq)}{\partial q_j} v_j,
+\end{equation}
+with the latter regarded as a row vector, so
+\begin{equation}
+\frac{\partial (G(\bq)\bv)}{\partial \bq} \bv = \big[v_1-v_3,v_2-v_4,-(v_1-v_3),-(v_2-v_4)\big] \bv = (v_1 - v_3)^2 + (v_2 - v_4)^2.
+\end{equation}
+Solving \eqref{ddconstraint} for $\lambda$ and applying \eqref{ggpd} gives
+\begin{align}
+\lambda &= m (G(\bq) G(\bq)^\top)^{-1} \frac{\partial (G(\bq)\bv)}{\partial \bq} \bv \notag \\
+        &= \frac{m}{2\ell^2} \frac{\partial (G(\bq)\bv)}{\partial \bq} \bv, \label{lambda}
+\end{align}
+which is the same as \eqref{rawlambda}.
+
+Differentiating \eqref{lambda}, and using the result to replace \eqref{system:constraint} converts the whole \eqref{system} into an ODE system.  This shows that the index of \eqref{system} is 3.  The derivation which results in this (unstated) ODE system is an \emph{unstabilized index reduction}.  However, we do not actually need or want the resulting differential equation for $\dot \lambda$.  Instead, we will back-up and use an index 2 DAE formulation.
 
 
-\section{Stabilized index 2 formulation}  FIXME Exercise 9.10 in \cite{AscherPetzold1998}; see also \cite{Gearetal1985}
+\section{Stabilized index 2 formulation}
+
+The approach of Gear and others \cite{Gearetal1985} (see also \cite[Exercise 9.10]{AscherPetzold1998}) is to formulate a system which is more constrained and has lower index than the original index 3 DAE system \eqref{system} or \eqref{rawsystem}, but which remains a DAE.
+
+We make two changes to system \eqref{system}.  First we append the velocity constraint \eqref{velocityconstraint} to \eqref{system}.  Then, to compensate, we add a corresponding Lagrange multiplier $\mu$, and use it to add a restoring constraint force to the velocity definition \eqref{system:dotq}:
+\begin{subequations}
+\label{stab}
+\begin{align}
+\dot \bq &= \bv - \mu\, G(\bq)^\top \label{stab:dotq} \\
+m \dot \bv &= \bbf - \lambda\, G(\bq)^\top  \label{stab:dotv} \\
+0 &= g(\bq)  \label{stab:qconstraint} \\
+0 &= G(\bq) \bv  \label{stab:vconstraint}
+\end{align}
+\end{subequations}
+
+We do not show this in detail, but system \eqref{stab} has index 2.  It is called the \emph{stabilized index 2 formulation} \cite{AscherPetzold1998} of our index 3 mechanical system with holonomic constraints \eqref{system}.  If the original mechanical system had $n$ position variables and $k$ constraints, thus total dimension $2n+k$, the dimension of the stabilized index 2 formulation is instead $2(n+k)$.
+
+It is easy to see that the exact solution is unchanged: the exact solution of \eqref{stab} is a quadruple $\bq(t),\bv(t),\lambda(t),\mu(t)$ where the triple $\bq(t),\bv(t),\lambda(t)$ exactly solves \eqref{system}.  In fact, differentiating \eqref{stab:qconstraint} with respect to time and applying \eqref{stab:dotq}, \eqref{stab:vconstraint}, and \eqref{ggpd} now gives
+\begin{equation}
+0 = G(\bq) \dot \bq = G(\bq) \left(\bv - \mu G(\bq)^\top\right) = 0 - \mu 2 \ell^2.
+\end{equation}
+Thus $\mu(t)$ is \emph{identically zero} when system \eqref{stab} is solved exactly.
+
+However, the modified velocity equation \eqref{stab:dotq} will assist the numerical solver in staying on the constraint, so the numerical solution to \eqref{stab} is superior the unstabilized formulation.
+
+FIXME restate for implementation in terms of 10 scalar variables
 
 
 \section{Numerical solution}
