@@ -44,10 +44,14 @@ urlcolor=black    % ...
 \newcommand{\bn}{\mathbf{n}}
 \newcommand{\bq}{\mathbf{q}}
 \newcommand{\br}{\mathbf{r}}
+\newcommand{\bs}{\mathbf{s}}
+\newcommand{\bt}{\mathbf{t}}
 \newcommand{\bu}{\mathbf{u}}
 \newcommand{\bv}{\mathbf{v}}
 \newcommand{\bw}{\mathbf{w}}
 \newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bz}{\mathbf{z}}
 
 \newcommand{\bV}{\mathbf{V}}
 \newcommand{\bX}{\mathbf{X}}
@@ -66,12 +70,12 @@ urlcolor=black    % ...
 
 
 \begin{document}
-\title[Two balls connected by a rod]{Two balls connected by a rod: an index 3 DAE case study.}
+\title[Two balls, rigidly-connected]{Two balls, rigidly-connected: \\ a DAE case study}
 
 \author{Ed Bueler}
 
 \begin{abstract}
-The problem of two equal-mass balls, rigidly connected by a massless rod, is described by an index-3 differential-algebraic equations (DAE) system.  Numerical solutions based on an index-2 stabilized form and implicit PETSc TS solvers are evaluated.
+The problem of two equal-mass balls, rigidly connected by a massless rod, is described by an index-3 differential-algebraic equations (DAE) system.  The system is reduced to a stabilized index-2 DAE system with identical solutions.  Numerical solutions using implicit PETSc TS solvers are evaluated.
 \end{abstract}
 
 \maketitle
@@ -212,7 +216,11 @@ Differentiating \eqref{lambda}, and then using the result to replace \eqref{syst
 
 \section{Stabilized index 2 formulation}
 
-The approach of Gear and others \cite{Gearetal1985} (see also \cite[Exercise 9.10]{AscherPetzold1998}) is to replace the original index 3 DAE system \eqref{system}, or \eqref{rawsystem}, with one which is more constrained, and has lower index, but which remains a DAE.  This involves two changes to system \eqref{system}.  First we append the velocity constraint \eqref{velocityconstraint} to \eqref{system}.  Then, to compensate, we add a corresponding Lagrange multiplier $\mu$, and use it to add a restoring constraint force to the velocity definition \eqref{system:dotq}:
+\begin{quote}
+\emph{For a DAE of index greater than 2 it is usually best to use one of the index-reduction techniques \dots to rewrite the problem in lower-index form.} \, \cite[p 262]{AscherPetzold1998}
+\end{quote}
+
+The approach of Gear and others \cite{Gearetal1985} is to replace the original index 3 DAE system \eqref{system}, or \eqref{rawsystem}, with one which is more constrained, and has lower index, but which remains a DAE.  This involves two changes to system \eqref{system}.  First we append the velocity constraint \eqref{velocityconstraint} to \eqref{system}.  Then, to compensate, we add a corresponding Lagrange multiplier $\mu$, and use it to add a restoring constraint force to the velocity definition \eqref{system:dotq}:
 \begin{subequations}
 \label{stab}
 \begin{align}
@@ -223,17 +231,54 @@ m \dot \bv &= \bbf - \lambda\, G(\bq)^\top  \label{stab:dotv} \\
 \end{align}
 \end{subequations}
 
-System \eqref{stab} has index 2 (not shown).  It is called the \emph{stabilized index 2 formulation} \cite{AscherPetzold1998} of our index 3 constrained mechanical system.  In general when the original mechanical system has $n$ position variables and $k$ constraints, thus total dimension $2n+k$, the dimension of the stabilized index 2 formulation becomes $2(n+k)$.
+As shown momentarily, system \eqref{stab} has index 2.  It is called the \emph{stabilized index 2 formulation} \cite[Exercise 9.10]{AscherPetzold1998} of our index 3 constrained mechanical system.  When such mechanical systems have $n$ position variables and $k$ constraints, thus total dimension $2n+k$, the dimension of the stabilized index 2 formulation becomes $2(n+k)$.  In our case $n=4$ and $k=1$.
 
 It is easy to see that the exact solution is unchanged.  In fact, the solution of \eqref{stab} is a quadruple $\bq(t),\bv(t),\lambda(t),\mu(t)$ wherein the triple $\bq(t),\bv(t),\lambda(t)$ solves \eqref{system}.  Differentiating \eqref{stab:qconstraint} with respect to time, and applying \eqref{ggpd}, \eqref{stab:dotq}, \eqref{stab:vconstraint}, gives
 \begin{equation}
-0 = G(\bq) \dot \bq = G(\bq) \left(\bv - \mu G(\bq)^\top\right) = 0 - \mu 2 \ell^2.
+0 = G(\bq) \dot \bq = G(\bq) \left(\bv - \mu G(\bq)^\top\right) = - 2 \ell^2 \mu.
 \end{equation}
-Thus $\mu(t)$ is \emph{identically zero} when system \eqref{stab} is solved exactly.
+Thus $\mu(t)$ is \emph{identically zero} when system \eqref{stab} is solved exactly.  However, the modified velocity equation \eqref{stab:dotq} will assist the numerical solver in staying on the constraint, making the numerical solution to \eqref{stab} superior the unstabilized formulation \eqref{system}.
 
-However, the modified velocity equation \eqref{stab:dotq} will assist the numerical solver in staying on the constraint, so the numerical solution to \eqref{stab} is superior the unstabilized formulation \cite{AscherPetzold1998}.
+To understand and expose the structure of system \eqref{stab}, let
+\begin{equation}
+\bx = \begin{bmatrix} \bq \\ \bv \end{bmatrix} \qquad \text{and} \qquad \bz = \begin{bmatrix} \mu \\ \lambda \end{bmatrix}.
+\end{equation}
+In this notation, system \eqref{stab} has the form
+\begin{subequations}
+\label{hessen}
+\begin{align}
+\dot \bx &= \br(\bx,\bz) \label{hessen:differential} \\
+  \bzero &= \bs(\bx) \label{hessen:algebraic}
+\end{align}
+\end{subequations}
+The $\bx$ variables are \emph{differential}, as they have time derivatives, while the $\bz$ variables are \emph{algebraic}.  For such a DAE system one would convert to an ODE system by computing by differentiating \eqref{hessen:algebraic} with respect to $t$ and then substituting \eqref{hessen:differential},
+\begin{equation}
+\bzero = \frac{\partial \bs}{\partial \bx} \dot \bx = \frac{\partial \bs}{\partial \bx} \br
+\end{equation}
+giving an equation which is algebraic; note $\partial \bs/\partial \bx$ is a $2k\times 2n = 2\times 8$ matrix.  A second time-differentiation is now needed, yielding
+\begin{equation}
+\bzero = \frac{\partial^2 \bs}{\partial \bx^2}\left[\dot \bx, \br\right] + \frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bx}\, \dot \bx + \frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bz}\, \dot \bz = \frac{\partial^2 \bs}{\partial \bx^2}\left[\br, \br\right] + \frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bx}\, \br + \frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bz}\, \dot \bz  \label{hessen:indextwo}
+\end{equation}
+where we use appropriate notation for the tensor-valued second derivative $\partial^2 \bs/\partial \bx^2$.  This gets us to the main point: equation \eqref{hessen:indextwo} can be solved for the needed time-derivative $\dot \bz$ if the matrix beside it is invertible.  That is, system \eqref{hessen} has index 2 as long as
+\begin{equation}
+B = \frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bz} \in \RR^{2k\times 2k} \quad \text{ is invertible}. \label{hessen:criterion}
+\end{equation}
+In general, when \eqref{hessen:criterion} holds we say system \eqref{hessen} is a \emph{Hessenberg} (or \emph{pure}) index-2 system.
 
-Our numerical implementation will use the following first-order DAE system with 10 scalar variables, the expanded form of system \eqref{stab}:
+In our case one differentiates system \eqref{stab} to find $B$, an easily computable $2\times 2$ matrix which simplifies to a positive multiple of the identity:
+\begin{equation}
+\frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bz} = \begin{bmatrix}  G(\bq) G(\bq)^\top & 0 \\ 2 G(\bq) \bv & G(\bq) G(\bq)^\top \end{bmatrix} = \begin{bmatrix}  2\ell^2 & 0 \\ 0 & 2\ell^2 \end{bmatrix} = 2\ell^2 I.
+\end{equation}
+This shows system \eqref{stab} has index 2.  Thus the index-reduction and stabilization procedure in this section has converted the original index-3 problem into a Hessenberg index-2 system.
+
+
+\section{Numerical solution}
+
+\begin{quote}
+\emph{[For] Hessenberg index-2 DAEs, the coefficients of the multistep methods must satisfy a set of order conditions which is in addition to the order conditions for ODEs, to attain order greater than 2.  It turns out that these additional order conditions are satisfied by BDF methods.} \, \cite[p 267]{AscherPetzold1998}
+\end{quote}
+
+Our numerical implementation in this section will solve a first-order, index-2 DAE system with 10 scalar variables, namely the expanded form of system \eqref{stab}:
 \begin{subequations}
 \label{rawstab}
 \begin{align}
@@ -251,9 +296,6 @@ Our numerical implementation will use the following first-order DAE system with 
 \end{subequations}
 
 FIXME specific example including initial conditions and parameter values
-
-
-\section{Numerical solution}
 
 FIXME Uses PETSc TS \cite{Balayetal2021,Bueler2021}, starting with BDF
 
