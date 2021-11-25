@@ -30,6 +30,7 @@ urlcolor=black    % ...
 
 \newcommand{\Matlab}{\textsc{Matlab}\xspace}
 \newcommand{\eps}{\epsilon}
+\newcommand{\lam}{\lambda}
 \newcommand{\RR}{\mathbb{R}}
 
 \newcommand{\grad}{\nabla}
@@ -299,18 +300,86 @@ m \dot v_4 &= - m g_r + \lambda (q_2 - q_4) \\
 \end{align}
 \end{subequations}
 
-\subsection*{Example} We will need a specific example for testing purposes.  We suppose that the masses are tennis balls with $m=58\,\text{g}$, with rod length $\ell=50\,\text{cm}$, and that we toss them on Earth, thus $g_r=9.81\,\text{m}\,\text{s}^{-2}$.  The initial positions will be $(q_1,q_2)=(0,1)\,\text{m}$ and $(q_3,q_4)=(0,2.5)\,\text{m}$, thus the two balls start one above the other, with the lower ball one meter off the ground.  Finally we suppose initial velocities $(v_1,v_2)=(10,10)\,\text{m}\,\text{s}^{-1}$ and $(v_3,v_4)=(15,10)\,\text{m}\,\text{s}^{-1}$ so that the second, higher mass starts at a higher velocity.  Observe that both constraints, $0=g(\bq)$ and $0=G(\bq)\bv$, are satisfied for these initial conditions.  That is, the initial positions are distance $\ell$ apart and the initial velocity $\bv$ is orthogonal to the displacement vector between the masses.
+\subsection*{Example A} We need specific examples for testing purposes.  Suppose the masses are tennis balls ($m=58\,\text{g}$) and the rod has length $\ell=50\,\text{cm}$.  We are on Earth ($g_r=9.81\,\text{m}\,\text{s}^{-2}$).  For Example A we take the initial positions to be $(q_1,q_2)=(0,1)\,\text{m}$ and $(q_3,q_4)=(0,1.5)\,\text{m}$, thus the two balls start one above the other, with the lower ball one meter off the ground.  The initial velocities are $(v_1,v_2)=(10,10)\,\text{m}\,\text{s}^{-1}$ and $(v_3,v_4)=(15,10)\,\text{m}\,\text{s}^{-1}$ so that the second, higher mass starts at a higher velocity.  Observe that both constraints, $0=g(\bq)$ and $0=G(\bq)\bv$, are satisfied for these initial conditions.  That is, the initial positions are distance $\ell$ apart and the initial velocity $\bv$ is orthogonal to the displacement vector between the masses.
 
 \medskip
 We will apply the TS (time-steppers) component of the PETSc library \cite{Balayetal2021,Bueler2021} to solve the DAE system.  To use the fully-implicit solvers in PETSc TS, specifically BDF, the problem is best put in ``fully-implicit'' form
 \begin{equation}
 \bF(t,\bu,\bu')=0. \label{fullyimplicit}
 \end{equation}
-The components of $\bu$ and $\bF$ are ordered following the expanded form \eqref{rawstab} above:
+The components of $\bu$ are ordered following the expanded form \eqref{rawstab},
 \begin{equation}
-\bu = \begin{bmatrix} q_1 \\ q_2 \\ q_3 \\ q_4 \\ FIXME \end{bmatrix}, \qquad \bF = FIXME
+\bu = \begin{bmatrix} \bq^\top & \bv^\top & \mu & \lambda \end{bmatrix}^\top
+= \begin{bmatrix} q_1 & q_2 & q_3 & q_4 & v_1 & v_2 & v_3 & v_4 & \mu & \lambda \end{bmatrix}^\top
 \end{equation}
-FIXME
+and $\bF$ is from \eqref{stab}:
+\begin{equation}
+\bF(t,\bu,\dot\bu)
+ = \begin{bmatrix}
+\dot \bq - \bv + \mu\, G(\bq)^\top \\
+m \dot \bv - \bbf + \lambda\, G(\bq)^\top \\
+g(\bq) \\
+G(\bq) \bv
+ \end{bmatrix}
+ = \begin{bmatrix}
+  \dot q_1 - v_1 + \mu (q_1 - q_3) \\
+  \dot q_2 - v_2 + \mu (q_2 - q_4) \\
+  \dot q_3 - v_3 - \mu (q_1 - q_3) \\
+  \dot q_4 - v_4 - \mu (q_2 - q_4) \\
+m \dot v_1 + \lambda (q_1 - q_3) \\
+m \dot v_2 + m g_r + \lambda (q_2 - q_4) \\
+m \dot v_3 - \lambda (q_1 - q_3) \\
+m \dot v_4 + m g_r - \lambda (q_2 - q_4) \\
+\frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) \\
+(q_1 - q_3) (v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)
+\end{bmatrix}
+\end{equation}
+
+The solution of the implicit method equations is most efficient with the Jacobian, namely using two $10 \times 10$ matrices.  The derivative with respect to $\bu$ has block structure with a larger upper-left $8\times 8$ block associated to the $\bq,\bv$ variables and a smaller lower-right $2\times 2$ block which is identically zero:
+\begin{equation}
+\frac{\partial\bF}{\partial\bu} =
+\left[\begin{array}{cc|cc}
+ \mu C & -I     & G(\bq)^\top & \\
+\lam C &        &             & G(\bq)^\top \\ \hline
+G(\bq) &        & 0           & \\
+H(\bv) & G(\bq) &             & 0
+\end{array}\right].
+\end{equation}
+Here $I$ and
+\begin{equation}
+C = \begin{bmatrix}
+ 1 &    & -1 & \\
+   &  1 &    & -1 \\
+-1 &    &  1 & \\
+   & -1 &    &  1
+\end{bmatrix}
+\end{equation}
+are $4\times 4$ matrices,
+\begin{equation}
+H(\bv) = \frac{\partial (G(\bq)\bv)}{\partial \bq} = \begin{bmatrix} v_1-v_3 & v_2-v_4 & -(v_1-v_3) & -(v_2-v_4) \end{bmatrix}
+\end{equation}
+is a $1\times 4$ row matrix like $G(\bq)$, and blank entries are zero.  As a nontrivial DAE, the derivative with respect to $\dot\bu$ is singular (nullity $=2$) but it is also diagonal:
+\begin{equation}
+\frac{\partial\bF}{\partial\dot\bu} = \left[\begin{array}{cc|cc}
+I &    &   & \\
+  & mI &   & \\ \hline
+  &    & 0 & \\
+  &    &   & 0
+\end{array}\right]
+\end{equation}
+
+The PETSc implicit TS solvers use a callback for the function $\bF(t,\bu,\dot\bu)$  and, because implicit discrete methods generate a linear system based on a combined Jacobian \cite[section 2.5]{Balayetal2021}
+\begin{equation}
+J_\sigma = \sigma \frac{\partial\bF}{\partial\dot\bu} + \frac{\partial\bF}{\partial\bu} = \left[\begin{array}{cc|cc}
+\sigma I + \mu C & -I     & G(\bq)^\top & \\
+\lam C & \sigma m I &             & G(\bq)^\top \\ \hline
+G(\bq) &        & 0           & \\
+H(\bv) & G(\bq) &             & 0
+\end{array}\right].
+\end{equation}
+for some scalar $\sigma$.
+
+\subsection*{Example B}  FIXME $J_\sigma$ is invertible when falling straight down, side-by-side $\ell$ apart
 
 FIXME start with BDF
 
