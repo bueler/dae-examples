@@ -26,6 +26,7 @@ urlcolor=black    % ...
 \renewcommand{\baselinestretch}{1.05}
 
 \newtheorem{lemma}{Lemma}
+\newtheorem*{example}{Example}
 
 \newcommand{\Matlab}{\textsc{Matlab}\xspace}
 \newcommand{\eps}{\epsilon}
@@ -53,6 +54,7 @@ urlcolor=black    % ...
 \newcommand{\by}{\mathbf{y}}
 \newcommand{\bz}{\mathbf{z}}
 
+\newcommand{\bF}{\mathbf{F}}
 \newcommand{\bV}{\mathbf{V}}
 \newcommand{\bX}{\mathbf{X}}
 
@@ -85,7 +87,7 @@ The problem of two equal-mass balls, rigidly connected by a massless rod, is des
 \thispagestyle{empty}
 \bigskip
 
-\section{Equations of motion}
+\section{Equations of motion using Lagrangian dynamics}
 
 Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  We may form a column vector from their cartesian coordinates,
 \begin{equation}
@@ -95,16 +97,20 @@ Now suppose the two masses move according to two forces.  First, gravity acts ve
 \begin{equation}
 0 = g(\bq) = \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \label{constraint}
 \end{equation}
-(The overall constant $\frac{1}{2}$ is chosen for convenience.)  Physically speaking, the rod exerts a tension or expansion force along the line between the masses, which varies during the motion.  We denote this scalar force by $\lambda$, positive when the rod is pulling the two masses together.  What is $\lambda$, and in fact, what are the total (vector) forces and the equations of motion?
+(The overall constant $\frac{1}{2}$ is chosen for convenience.)  Physically speaking, the rod exerts a tension or expansion force along the line between the masses, which varies during the motion.  We denote this scalar force by $\lambda$, positive when the rod is pulling the two masses together.
 
-Newton's original laws are poorly-suited to describing the forces in such a constrained situation.  However, Hamilton's principle of least action \cite[equation (52.1)]{Lanczos1970} applies.
+Newton's second law says, of course, that if we have the total, configuration-dependent and tension-dependent force $\bF(\bq,\lambda)$ then
+\begin{equation}
+m \ddot \bq = \bF(\bq,\lambda) \label{newtonssecond}
+\end{equation}
+describes the motion by determining the accelerations $\ddot \bq$.  This is all fine and good, except how are we to determine the total (vector) forces including those enforcing the constraint?  In particular, how does $\bF$ depend on $\lambda$, and how does the constraint \eqref{constraint} determine $\lambda$?
 
-For unconstrained motion described by the position variables $\bq(t) \in \RR^n$ and velocities $\dot\bq(t)$, one first defines the \emph{Lagrangian} $\mathcal{L}(\bq,\dot\bq) = T(\bq,\dot\bq) - U(\bq)$, the difference of kinetic and potential energy.  Hamilton's principle then says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system ($i=1,\dots,n$):
+It is well-known that Newton's laws are poorly-suited to describing the forces in such a constrained situation, but that \emph{Hamilton's principle of least action} \cite[equation (52.1)]{Lanczos1970} applies, and thus we will find the motion via \emph{Lagrangian dynamics}.  For unconstrained motion described by the position variables $\bq(t) \in \RR^n$ and velocities $\dot\bq(t)$, to apply Hamilton's principle one first defines the \emph{Lagrangian} $\mathcal{L}(\bq,\dot\bq) = T(\bq,\dot\bq) - U(\bq)$, namely the difference of kinetic and potential energy.  The principle then says that the motion $\bq(t)$ solves the Euler-Lagrange differential equation system ($i=1,\dots,n$):
 \begin{equation}
 \frac{d}{dt} \frac{\partial \mathcal{L}}{\partial \dot q_i} = \frac{\partial \mathcal{L}}{\partial q_i}. \label{eulerlagrange}
 \end{equation}
 
-For constrained motion we may also use the principle, but only after modifying the Lagrangian.  In general we assume $\bg(\bq) \in \RR^k$ is a column vector of the constraints, i.e.
+For constrained motion we may use Hamilton's principle after modifying the Lagrangian.  Suppose $\bg(\bq) \in \RR^k$ is a column vector of the constraints, i.e.
 \begin{equation}
 \bg(\bq)=\bzero, \label{generalconstraints}
 \end{equation}
@@ -127,11 +133,10 @@ T(\bv) = \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right), \qquad U(\bq) = m g_r
 where $\bv(t) = \dot\bq(t)$ and $g_r>0$ is the acceleration of gravity.  Thus we define the modified Lagrangian
 \begin{align}
 \mathcal{L}(\bq,\bv,\lambda) &= T(\bv) - U(\bq) - \lambda g(\bq) \label{lagrangian} \\
-  &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) \notag \\
-  &\qquad - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
+  &= \frac{m}{2} \left(v_1^2+v_2^2+v_3^2+v_4^2\right) - m g_r \left(q_2+q_4\right) - \frac{\lambda}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \notag
 \end{align}
 
-Our constrained two-masses problem is now a system of 9 first-order differential equations.  This includes the definition of the velocities, the Euler-Lagrange equations \eqref{eulerlagrange}, and the constraint \eqref{constraint} itself:
+Our constrained two-masses problem is now a system of 9 equations including the definition of the velocities, the Euler-Lagrange equations \eqref{eulerlagrange}, and the constraint \eqref{constraint}:
 \begin{subequations}
 \label{rawsystem}
 \begin{align}
@@ -174,8 +179,7 @@ Some DAE systems are more difficult to solve than others, but the various possib
 
 Let us show, by differentiating $g(\bq)=0$ with respect to time, why system \eqref{system} has index 3.  (The argument here will not exclude generating an ODE in fewer differentiations, so in fact we show the index is at most 3.)  Differentiating \eqref{system:constraint} once with respect to $t$ gives
 \begin{align}
-0 &= \frac{d}{dt} \bigg(\frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)\bigg) \notag \\
-  &= (q_1 - q_3)(\dot q_1 - \dot q_3) + (q_2 - q_4) (\dot q_2 - \dot q_4), \notag \\
+0 &= \frac{d}{dt} \bigg(\frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big)\bigg) = (q_1 - q_3)(\dot q_1 - \dot q_3) + (q_2 - q_4) (\dot q_2 - \dot q_4), \notag \\
   &= (q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4). \label{rawvelocityconstraint}
 \end{align}
 By substituting \eqref{system:dotq} and \eqref{constraintjacobian}, we may write this as a matrix-vector product:
@@ -214,13 +218,13 @@ which is the same as \eqref{rawlambda}.
 Differentiating \eqref{lambda}, and then using the result to replace \eqref{system:constraint}, finally converts system \eqref{system} into an ODE system.  This shows that the index of \eqref{system} is 3.  This derivation is called an \emph{unstabilized index reduction}.  However, we do not actually need or want this final ODE system, or the differential equation for $\dot \lambda$ in particular.  Instead, we will use a stabilized index 2 DAE formulation.
 
 
-\section{Stabilized index 2 formulation}
+\section{Stabilized index-2 formulation}
 
 \begin{quote}
 \emph{For a DAE of index greater than 2 it is usually best to use one of the index-reduction techniques \dots to rewrite the problem in lower-index form.} \, \cite[p 262]{AscherPetzold1998}
 \end{quote}
 
-The approach of Gear and others \cite{Gearetal1985} is to replace the original index 3 DAE system \eqref{system}, or \eqref{rawsystem}, with one which is more constrained, and has lower index, but which remains a DAE.  This involves two changes to system \eqref{system}.  First we append the velocity constraint \eqref{velocityconstraint} to \eqref{system}.  Then, to compensate, we add a corresponding Lagrange multiplier $\mu$, and use it to add a restoring constraint force to the velocity definition \eqref{system:dotq}:
+The approach of Gear and others \cite{Gearetal1985} is to replace the original index-3 DAE system \eqref{system}, or \eqref{rawsystem}, with one which is more constrained, and has lower index, but which remains a DAE.  This involves two changes to system \eqref{system}.  First we append the velocity constraint \eqref{velocityconstraint} to \eqref{system}.  Then, to compensate, we add a corresponding Lagrange multiplier $\mu$, and use it to add a restoring constraint force to the velocity definition \eqref{system:dotq}:
 \begin{subequations}
 \label{stab}
 \begin{align}
@@ -231,7 +235,7 @@ m \dot \bv &= \bbf - \lambda\, G(\bq)^\top  \label{stab:dotv} \\
 \end{align}
 \end{subequations}
 
-As shown momentarily, system \eqref{stab} has index 2.  It is called the \emph{stabilized index 2 formulation} \cite[Exercise 9.10]{AscherPetzold1998} of our index 3 constrained mechanical system.  When such mechanical systems have $n$ position variables and $k$ constraints, thus total dimension $2n+k$, the dimension of the stabilized index 2 formulation becomes $2(n+k)$.  In our case $n=4$ and $k=1$.
+As shown momentarily, system \eqref{stab} has index 2.  It is called the \emph{stabilized index-2 formulation} \cite[Exercise 9.10]{AscherPetzold1998} of our index 3 constrained mechanical system.  When such mechanical systems have $n$ position variables and $k$ constraints, thus total dimension $2n+k$, the dimension of the stabilized index-2 formulation becomes $2(n+k)$.  In our case $n=4$ and $k=1$.
 
 It is easy to see that the exact solution is unchanged.  In fact, the solution of \eqref{stab} is a quadruple $\bq(t),\bv(t),\lambda(t),\mu(t)$ wherein the triple $\bq(t),\bv(t),\lambda(t)$ solves \eqref{system}.  Differentiating \eqref{stab:qconstraint} with respect to time, and applying \eqref{ggpd}, \eqref{stab:dotq}, \eqref{stab:vconstraint}, gives
 \begin{equation}
@@ -265,11 +269,11 @@ B = \frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bz} \in \RR^
 \end{equation}
 In general, when \eqref{hessen:criterion} holds we say system \eqref{hessen} is a \emph{Hessenberg} (or \emph{pure}) index-2 system.
 
-In our case one differentiates system \eqref{stab} to find $B$, an easily computable $2\times 2$ matrix which simplifies to a positive multiple of the identity:
+In our case one differentiates system \eqref{stab} to find $B$, an easily computable $2\times 2$ matrix which simplifies to a diagonal matrix:
 \begin{equation}
-\frac{\partial \bs}{\partial \bx} \frac{\partial \br}{\partial \bz} = \begin{bmatrix}  G(\bq) G(\bq)^\top & 0 \\ 2 G(\bq) \bv & G(\bq) G(\bq)^\top \end{bmatrix} = \begin{bmatrix}  2\ell^2 & 0 \\ 0 & 2\ell^2 \end{bmatrix} = 2\ell^2 I.
+B = \begin{bmatrix}  G(\bq) G(\bq)^\top & 0 \\ 2 G(\bq) \bv & m^{-1} G(\bq) G(\bq)^\top \end{bmatrix} = 2\ell^2 \begin{bmatrix}  1 & 0 \\ 0 & m^{-1} \end{bmatrix}.
 \end{equation}
-This shows system \eqref{stab} has index 2.  Thus the index-reduction and stabilization procedure in this section has converted the original index-3 problem into a Hessenberg index-2 system.
+As this matrix is invertible, we have shown that system \eqref{stab} has index 2.  Thus the index-reduction and stabilization procedure in this section has converted the original index-3 problem into a Hessenberg index-2 system.
 
 
 \section{Numerical solution}
@@ -278,26 +282,37 @@ This shows system \eqref{stab} has index 2.  Thus the index-reduction and stabil
 \emph{[For] Hessenberg index-2 DAEs, the coefficients of the multistep methods must satisfy a set of order conditions which is in addition to the order conditions for ODEs, to attain order greater than 2.  It turns out that these additional order conditions are satisfied by BDF methods.} \, \cite[p 267]{AscherPetzold1998}
 \end{quote}
 
-Our numerical implementation in this section will solve a first-order, index-2 DAE system with 10 scalar variables, namely the expanded form of system \eqref{stab}:
+Our numerical implementation in this section will solve an initial-value problem for a first-order, index-2 DAE system with 10 scalar variables.  For clarity we state this as the expanded form of system \eqref{stab}:
 \begin{subequations}
 \label{rawstab}
 \begin{align}
-\dot q_1 &= v_1 - \mu (q_1 - q_3) \\
-\dot q_2 &= v_2 - \mu (q_2 - q_4) \\
-\dot q_3 &= v_3 + \mu (q_1 - q_3) \\
-\dot q_4 &= v_4 + \mu (q_2 - q_4) \\
-\dot v_1 &= - \frac{\lambda}{m} (q_1 - q_3) \\
-\dot v_2 &= - g_r - \frac{\lambda}{m} (q_2 - q_4) \\
-\dot v_3 &= \frac{\lambda}{m} (q_1 - q_3) \\
-\dot v_4 &= - g_r + \frac{\lambda}{m} (q_2 - q_4) \\
-       0 &= \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) \\
-       0 &= (q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)
+  \dot q_1 &= v_1 - \mu (q_1 - q_3) \\
+  \dot q_2 &= v_2 - \mu (q_2 - q_4) \\
+  \dot q_3 &= v_3 + \mu (q_1 - q_3) \\
+  \dot q_4 &= v_4 + \mu (q_2 - q_4) \\
+m \dot v_1 &= - \lambda (q_1 - q_3) \\
+m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
+m \dot v_3 &= \lambda (q_1 - q_3) \\
+m \dot v_4 &= - m g_r + \lambda (q_2 - q_4) \\
+         0 &= \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) \\
+         0 &= (q_1 - q_3) (v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)
 \end{align}
 \end{subequations}
 
-FIXME specific example including initial conditions and parameter values
+\subsection*{Example} We will need a specific example for testing purposes.  We suppose that the masses are tennis balls with $m=58\,\text{g}$, with rod length $\ell=50\,\text{cm}$, and that we toss them on Earth, thus $g_r=9.81\,\text{m}\,\text{s}^{-2}$.  The initial positions will be $(q_1,q_2)=(0,1)\,\text{m}$ and $(q_3,q_4)=(0,2.5)\,\text{m}$, thus the two balls start one above the other, with the lower ball one meter off the ground.  Finally we suppose initial velocities $(v_1,v_2)=(10,10)\,\text{m}\,\text{s}^{-1}$ and $(v_3,v_4)=(15,10)\,\text{m}\,\text{s}^{-1}$ so that the second, higher mass starts at a higher velocity.  Observe that both constraints, $0=g(\bq)$ and $0=G(\bq)\bv$, are satisfied for these initial conditions.  That is, the initial positions are distance $\ell$ apart and the initial velocity $\bv$ is orthogonal to the displacement vector between the masses.
 
-FIXME Uses PETSc TS \cite{Balayetal2021,Bueler2021}, starting with BDF
+\medskip
+We will apply the TS (time-steppers) component of the PETSc library \cite{Balayetal2021,Bueler2021} to solve the DAE system.  To use the fully-implicit solvers in PETSc TS, specifically BDF, the problem is best put in ``fully-implicit'' form
+\begin{equation}
+\bF(t,\bu,\bu')=0. \label{fullyimplicit}
+\end{equation}
+The components of $\bu$ and $\bF$ are ordered following the expanded form \eqref{rawstab} above:
+\begin{equation}
+\bu = \begin{bmatrix} q_1 \\ q_2 \\ q_3 \\ q_4 \\ FIXME \end{bmatrix}, \qquad \bF = FIXME
+\end{equation}
+FIXME
+
+FIXME start with BDF
 
 \small
 
