@@ -7,7 +7,7 @@ Plot trajectory from running TWOBALLS.  Reads output from
 Requires copies or sym-links to $PETSC_DIR/lib/petsc/bin/PetscBinaryIO.py and
 $PETSC_DIR/lib/petsc/bin/petsc_conf.py.  (Do:  make pyScripts)
 Note there is a particular variable order:
-  (x1, y1, dx1dt, dy1dt, x2, y2, dx2dt, dy2dt)
+  (x1, y1, x2, y2, dx1dt, dy1dt, dx2dt, dy2dt, mu, lambda)
 '''
 
 import PetscBinaryIO
@@ -44,7 +44,7 @@ print('time t has length=%d, solution Y is shape=(%d,%d)' % \
 #    plt.plot(t,U[k],label='y[%d]' % k)
 
 plt.plot(U[0,U[1]>=0],U[1,U[1]>=0],label='particle 1')
-plt.plot(U[4,U[5]>=0],U[5,U[5]>=0],label='particle 2')
+plt.plot(U[2,U[3]>=0],U[3,U[3]>=0],label='particle 2')
 plt.xlabel('x'),  plt.ylabel('y')
 plt.legend()
 
