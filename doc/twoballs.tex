@@ -100,11 +100,11 @@ Now suppose the two masses move according to two forces.  First, gravity acts ve
 \end{equation}
 (The overall constant $\frac{1}{2}$ is chosen for convenience.)  Physically speaking, the rod exerts a tension or expansion force along the line between the masses, which varies during the motion.  We denote this scalar force by $\lambda$, positive when the rod is pulling the two masses together.
 
-Newton's second law says, of course, that if we have the total, configuration-dependent and tension-dependent force $\bF(\bq,\lambda)$ then
+Newton's second law says, of course, that if we have the total force $\bm{\Phi}(\bq,\lambda)$ then
 \begin{equation}
-m \ddot \bq = \bF(\bq,\lambda) \label{newtonssecond}
+m \ddot \bq = \bm{\Phi}(\bq,\lambda) \label{newtonssecond}
 \end{equation}
-describes the motion by determining the accelerations $\ddot \bq$.  This is all fine and good, except how are we to determine the total (vector) forces including those enforcing the constraint?  In particular, how does $\bF$ depend on $\lambda$, and how does the constraint \eqref{constraint} determine $\lambda$?
+describes the motion by determining the accelerations $\ddot \bq$.  This is all fine and good, except how are we to determine the total (vector) forces including those enforcing the constraint?  In particular, how does $\bm{\Phi}$ depend on the tension $\lambda$, and how does the constraint \eqref{constraint} determine $\lambda$?
 
 It is well-known that Newton's laws are poorly-suited to describing the forces in such a constrained situation, but that we can find the motion via \emph{Lagrangian dynamics}.  One can derive the Lagrangian approach from the calculus of variations, via \emph{Hamilton's principle of least action} \cite[equation (52.1)]{Lanczos1970}, but here we will simply use the Euler-Lagrange equations below as the source of our DAE system.  This Lagrangian analytical approach which applies broadly, across all of classical dynamics \cite{Layton1998}.
 
@@ -189,11 +189,10 @@ By substituting \eqref{system:dotq} and \eqref{constraintjacobian}, we may write
 \end{equation}
 This equation is called the \emph{velocity constraint}.
 
-Differentiating again, then substitution of \eqref{system:dotv} and \eqref{system:constraint} yields
-\begin{align}
-0 &= \frac{d}{dt} \Big((q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)\Big) \notag \\
-  &= (v_1 - v_3)^2 + (v_2 - v_4)^2 - \lambda \frac{2 \ell^2}{m}, \label{rawddconstraint}
-\end{align}
+Differentiating again, and then substitution of \eqref{system:dotv} and \eqref{system:constraint}, yields the \emph{acceleration constraint} \cite{Layton1998}
+\begin{equation}
+0 = \frac{d}{dt} \Big((q_1 - q_3)(v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)\Big) = (v_1 - v_3)^2 + (v_2 - v_4)^2 - \lambda \frac{2 \ell^2}{m} \label{rawddconstraint}
+\end{equation}
 or equivalently
 \begin{equation}
 \lambda = \frac{m}{2\ell^2} \left((v_1 - v_3)^2 + (v_2 - v_4)^2\right). \label{rawlambda}
@@ -208,13 +207,16 @@ Here
 \left(\frac{\partial G(\bq)}{\partial \bq}\right)_{ij} = \frac{\partial G_{1i}(\bq)}{\partial q_j} \qquad \text{and} \qquad
 \left(\frac{\partial (G(\bq)\bv)}{\partial \bq}\right)_{j} = \frac{\partial G_{1i}(\bq)}{\partial q_j} v_j,
 \end{equation}
-with the latter regarded as a row vector.  Applying \eqref{ggpd} in \eqref{ddconstraint} and solving for $\lambda$ gives
+with the latter regarded as a row vector.  In fact, let
 \begin{equation}
-\lambda = \frac{m}{2\ell^2} \frac{\partial (G(\bq)\bv)}{\partial \bq} \bv, \label{lambda}
+H(\bv) = \frac{\partial (G(\bq)\bv)}{\partial \bq} = \begin{bmatrix} v_1-v_3, & v_2-v_4, & -(v_1-v_3), & -(v_2-v_4) \end{bmatrix}. \label{velocityconstraintderiv}
 \end{equation}
-which is the same as \eqref{rawlambda}.
+Applying \eqref{ggpd} in \eqref{ddconstraint} and solving for $\lambda$ gives \eqref{rawlambda} again:
+\begin{equation}
+\lambda = \frac{m}{2\ell^2} H(\bv) \bv = \frac{m}{2\ell^2} \left((v_1 - v_3)^2 + (v_2 - v_4)^2\right). \label{lambda}
+\end{equation}
 
-Differentiating \eqref{lambda}, and then using the result to replace \eqref{system:constraint}, finally converts system \eqref{system} into an ODE system.  This \emph{unstabilized index reduction} shows that \eqref{system} has at most index 3.  However, we do not actually need or want the final ODE system, or the differential equation for $\dot \lambda$ in particular.  Instead, we will use a stabilized index 2 DAE formulation.
+Differentiating \eqref{lambda}, and using this formula for $\dot\lambda$ to replace \eqref{system:constraint}, finally converts system \eqref{system} into an ODE system.  This \emph{unstabilized index reduction} shows that \eqref{system} has at most index 3.  However, we do not actually need or want the final ODE system, or even the differential equation for $\dot \lambda$.  Instead, we will use a stabilized index 2 DAE formulation as described in the next section.
 
 
 \section{Stabilized index-2 formulation}
@@ -275,42 +277,24 @@ B = \begin{bmatrix}  G(\bq) G(\bq)^\top & 0 \\ 2 G(\bq) \bv & m^{-1} G(\bq) G(\b
 As this matrix is invertible, we have shown that system \eqref{stab} has index 2.  Thus our index-reduction and stabilization procedure has converted the original index-3 problem into a Hessenberg index-2 system.
 
 
-\section{Numerical solution}
+\section{Numerical solutions}
 
 \begin{quote}
 \emph{[For] Hessenberg index-2 DAEs, the coefficients of the multistep methods must satisfy a set of order conditions which is in addition to the order conditions for ODEs, to attain order greater than 2.  It turns out that these additional order conditions are satisfied by BDF methods.} \, \cite[p 267]{AscherPetzold1998}
 \end{quote}
 
-Our numerical implementation in this section will solve an initial-value problem for a first-order, index-2 DAE system with 10 scalar variables.  For clarity we state this as the expanded form of system \eqref{stab}:
-\begin{subequations}
-\label{rawstab}
-\begin{align}
-  \dot q_1 &= v_1 - \mu (q_1 - q_3) \\
-  \dot q_2 &= v_2 - \mu (q_2 - q_4) \\
-  \dot q_3 &= v_3 + \mu (q_1 - q_3) \\
-  \dot q_4 &= v_4 + \mu (q_2 - q_4) \\
-m \dot v_1 &= - \lambda (q_1 - q_3) \\
-m \dot v_2 &= - m g_r - \lambda (q_2 - q_4) \\
-m \dot v_3 &= \lambda (q_1 - q_3) \\
-m \dot v_4 &= - m g_r + \lambda (q_2 - q_4) \\
-         0 &= \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big) \\
-         0 &= (q_1 - q_3) (v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)
-\end{align}
-\end{subequations}
+Our numerical implementation in this section will solve initial-value problems for a first-order, index-2 DAE system with 10 scalar variables.  We will apply the TS (time-steppers) component of the PETSc library \cite{Balayetal2021,Bueler2021} to solve the DAE system.
 
-\subsection*{Example A} We need specific examples for testing purposes.  Suppose the masses are tennis balls ($m=58\,\text{g}$) and the rod has length $\ell=50\,\text{cm}$.  We are on Earth ($g_r=9.81\,\text{m}\,\text{s}^{-2}$).  For Example A we take the initial positions to be $(q_1,q_2)=(0,1)\,\text{m}$ and $(q_3,q_4)=(0,1.5)\,\text{m}$, thus the two balls start one above the other, with the lower ball one meter off the ground.  The initial velocities are $(v_1,v_2)=(10,10)\,\text{m}\,\text{s}^{-1}$ and $(v_3,v_4)=(15,10)\,\text{m}\,\text{s}^{-1}$ so that the second, higher mass starts at a higher velocity.  Observe that both constraints, $0=g(\bq)$ and $0=G(\bq)\bv$, are satisfied for these initial conditions.  That is, the initial positions are distance $\ell$ apart and the initial velocity $\bv$ is orthogonal to the displacement vector between the masses.
-
-\medskip
-We will apply the TS (time-steppers) component of the PETSc library \cite{Balayetal2021,Bueler2021} to solve the DAE system.  To use the fully-implicit solvers in PETSc TS, specifically BDF, the problem is best put in ``fully-implicit'' form
+To use the fully-implicit solvers in PETSc TS, specifically BDF, the problem is best put in the most general DAE form
 \begin{equation}
 \bF(t,\bu,\bu')=0. \label{fullyimplicit}
 \end{equation}
-The components of $\bu$ are ordered following the expanded form \eqref{rawstab},
+We choose to order the components of $\bu$ as follows:
 \begin{equation}
 \bu = \begin{bmatrix} \bq \\ \bv \\ \mu \\ \lambda \end{bmatrix}
 = \begin{bmatrix} q_1 & q_2 & q_3 & q_4 & v_1 & v_2 & v_3 & v_4 & \mu & \lambda \end{bmatrix}^\top
 \end{equation}
-with $\bF$ from \eqref{stab}:
+The function $\bF$ is defined following system \eqref{stab}:
 \begin{equation}
 \bF(t,\bu,\dot\bu)
  = \begin{bmatrix}
@@ -332,10 +316,11 @@ m \dot v_4 + m g_r - \lambda (q_2 - q_4) \\
 (q_1 - q_3) (v_1 - v_3) + (q_2 - q_4) (v_2 - v_4)
 \end{bmatrix}
 \end{equation}
+Note that $\bF$ does not explicitly depend on $t$.
 
-At each step of an implicit method, a system of 10 nonlinear equations will be solved.  While this can be done using a finite-difference Jacobian (see the next section), it is most efficient using an exact, analytical Jacobian.  Effectively this means we must calculate two $10 \times 10$ matrices, the derivatives of $\bF$ with respect to $\bu$ and $\dot\bu$.
+At each step of an implicit method, a system of 10 nonlinear equations will be solved.  While this can be done using a finite-difference Jacobian (see the next section), it is most efficient using an exact, analytical Jacobian.  Effectively this means we must calculate two $10 \times 10$ matrices, next, the derivatives of $\bF$ with respect to $\bu$ and $\dot\bu$.
 
-The matrix $\partial\bF/\partial\bu$ has block structure with a larger upper-left $8\times 8$ block associated to the $\bq,\bv$ variables and a smaller lower-right $2\times 2$ block which is identically zero:
+The matrix $\partial\bF/\partial\bu$ has nested block structure with a larger upper-left $8\times 8$ block associated to the $\bq,\bv$ variables and a smaller lower-right $2\times 2$ block which is identically zero:
 \begin{equation}
 \frac{\partial\bF}{\partial\bu} =
 \left[\begin{array}{cc|cc}
@@ -345,7 +330,7 @@ G(\bq) &        &             & \\
 H(\bv) & G(\bq) &             &
 \end{array}\right].
 \end{equation}
-Note that blank blocks/entries are zero.  Here $I$ is the $4\times 4$ identity matrix and
+(Blank blocks/entries are zero.)  Here $I$ is the $4\times 4$ identity matrix and
 \begin{equation}
 C = \begin{bmatrix}
  1 &    & -1 & \\
@@ -354,13 +339,9 @@ C = \begin{bmatrix}
    & -1 &    &  1
 \end{bmatrix}.
 \end{equation}
-Also,
-\begin{equation}
-H(\bv) = \frac{\partial (G(\bq)\bv)}{\partial \bq} = \begin{bmatrix} v_1-v_3 & v_2-v_4 & -(v_1-v_3) & -(v_2-v_4) \end{bmatrix}
-\end{equation}
-is a $1\times 4$ row matrix like $G(\bq)$.
+Recall that $H(\bv)$ is the $1\times 4$ row matrix defined in \eqref{velocityconstraintderiv}.
 
-Because our problem is a nontrivial DAE, the matrix $\partial\bF/\partial\dot\bu$ is singular (nullity $=2$), but also diagonal:
+Because our problem is a nontrivial DAE, the matrix $\partial\bF/\partial\dot\bu$ is singular (nullity $=2$), but also conveniently diagonal:
 \begin{equation}
 \frac{\partial\bF}{\partial\dot\bu} = \left[\begin{array}{cc|cc}
 I &    &   & \\
@@ -380,6 +361,10 @@ H(\bv) & G(\bq) &             & 0
 \end{array}\right].
 \end{equation}
 for some scalar $\sigma$.  A key idea is that the DAE itself, and many implicit methods, will be uniquely solvable because $J_\sigma$ is nonsingular for $\sigma > 0$.
+
+Next we need specific examples for testing purposes.
+
+\subsection*{Example A}  Suppose the masses are tennis balls ($m=58\,\text{g}$), the rod has length $\ell=50\,\text{cm}$, and we are on Earth ($g_r=9.81\,\text{m}\,\text{s}^{-2}$).  For Example A we take the initial positions to be $(q_1,q_2)=(0,1)\,\text{m}$ and $(q_3,q_4)=(0,1.5)\,\text{m}$, thus the two balls start one above the other, with the lower one meter off the ground.  The initial velocities are $(v_1,v_2)=(10,10)\,\text{m}\,\text{s}^{-1}$ and $(v_3,v_4)=(15,10)\,\text{m}\,\text{s}^{-1}$ so that the second, higher mass starts at a higher velocity.  Observe that both constraints, $0=g(\bq)$ and $0=G(\bq)\bv$, are satisfied for these initial conditions.  That is, the initial positions are distance $\ell$ apart and the velocity constraint \eqref{stab:vconstraint} is satisfied.
 
 \subsection*{Example B}  FIXME suppose balls falling straight down, side-by-side $\ell$ apart; $\partial\bF/\partial\bu$ clearly not invertible because $\mu=\lambda=0$; of course $\partial\bF/\partial\dot\bu$ also not invertible; but $J_\sigma$ invertible
 
