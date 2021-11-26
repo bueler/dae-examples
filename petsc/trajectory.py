@@ -2,12 +2,13 @@
 
 help =\
 '''
-Plot trajectory from running TWOBALLS.  Reads output from
+Plot trajectory from running LOOSE or ROD.  Reads output from
    -ts_monitor binary:TDATA -ts_monitor_solution binary:UDATA
 Requires copies or sym-links to $PETSC_DIR/lib/petsc/bin/PetscBinaryIO.py and
 $PETSC_DIR/lib/petsc/bin/petsc_conf.py.  (Do:  make pyScripts)
-Note there is a particular variable order:
-  (x1, y1, x2, y2, dx1dt, dy1dt, dx2dt, dy2dt, mu, lambda)
+Note there is a particular variable order but only the first four variables
+are relevant:
+  (x1, y1, x2, y2, ...)
 '''
 
 import PetscBinaryIO

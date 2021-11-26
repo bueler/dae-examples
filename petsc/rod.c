@@ -1,37 +1,32 @@
 static char help[] = "DAE system solver example using TS.  Models two\n"
 "equal-mass balls (particles) moving in the plane with a rigid connecting\n"
-"rod between.  A constrained Lagrangian dynamics formulation, converted\n"
-"to stabilized index-2 form is used.  We use cartesian\n"
-"coordinates (x,y) and velocities (v=dx/dt,w=dy/dt). The system has\n"
-"dimension 10 in the main case (rod, stabilized index-2).\n\n";
+"rod between.  (Alternatively, -rod_free removes the rod and the motion\n"
+"is free and independent.)  A stabilized index-2 constrained Lagrangian\n"
+"dynamics formulation is used.  We use cartesian coordinates (x,y) and\n" "velocities (v=dx/dt,w=dy/dt). The system has dimension 10.\n\n";
 
 // DEBUG possibly a good solution using BDF3 and -snes_fd
-// ./twoballs -tb_connect rod -ts_type bdf -ksp_type preonly -pc_type svd -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_dt 0.01 -ts_max_time 1.0 -snes_fd -ts_bdf_order 3
+// ./rod -ts_type bdf -ksp_type preonly -pc_type svd -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_dt 0.01 -ts_max_time 1.0 -snes_fd -ts_bdf_order 3
 // ./trajectory.py -o figure.png t.dat u.dat
 
 // DEBUG check Jacobian for rod problem using one backward-Euler step
 // (2nd case with -snes_fd):
-// ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat
-// ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat -snes_fd
+// ./rod -ts_type beuler -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat
+// ./rod -ts_type beuler -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat -snes_fd
 
 // DEBUG check BDF2 convergence in free problem using Lagrangian formulation:
-//for T in 2 3 4 5 7 8 9 10 11 12; do ./twoballs -tb_connect free -ts_type bdf -ts_rtol 1.0e-$T -ts_atol 1.0e-$T; done
+//for T in 2 3 4 5 7 8 9 10 11 12; do ./rod -rod_free -ts_type bdf -ts_rtol 1.0e-$T -ts_atol 1.0e-$T; done
 
 #include <petsc.h>
 
-typedef enum {FREE, ROD} ConnectType;
-static const char* ConnectTypes[] = {"free","rod",
-                                     "ProblemType", "", NULL};
-
 typedef struct {
-    ConnectType  connect;
+    PetscBool    free;
     PetscReal    g,     // m s-2;  acceleration of gravity
                  m,     // kg;     ball mass
                  l;     // m;      spring or rod length
-} TBCtx;
+} RodCtx;
 
-extern PetscErrorCode SetInitial(Vec, TBCtx*);
-extern PetscErrorCode FreeExact(Vec, PetscReal, Vec, TBCtx*);
+extern PetscErrorCode SetInitial(Vec, RodCtx*);
+extern PetscErrorCode FreeExact(Vec, PetscReal, Vec, RodCtx*);
 extern PetscErrorCode LagrangeIFcn(TS, PetscReal, Vec, Vec, Vec, void*);
 extern PetscErrorCode LagrangeIJac(TS, PetscReal, Vec, Vec, PetscReal,
                                    Mat, Mat, void*);
@@ -43,25 +38,25 @@ int main(int argc,char **argv) {
     Vec            u, u0, uexact;
     Mat            A;
     TS             ts;
-    TBCtx          user;
+    RodCtx         user;
+    char           probstr[20] = "rod";
 
     ierr = PetscInitialize(&argc, &argv, NULL, help); if (ierr) return ierr;
 
-    user.connect = FREE;
+    user.free = PETSC_FALSE;
     user.g = 9.81;
     user.m = 58.0e-3; // 58 g for a tennis ball
     user.l = 0.5;     // rod length, and determines initial condition
-    ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "tb_", "options for twoballs",
+    ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "rod_", "options for rod",
                              ""); CHKERRQ(ierr);
-    ierr = PetscOptionsEnum("-connect","connect balls: free,rod",
-                            "twoballs.c", ConnectTypes,
-                            (PetscEnum)user.connect,
-                            (PetscEnum*)&user.connect, NULL); CHKERRQ(ierr);
+    ierr = PetscOptionsBool("-free","remove rod for free motion",
+                            "rod.c", user.free, &user.free,
+                            NULL); CHKERRQ(ierr);
     ierr = PetscOptionsReal("-g", "acceleration of gravity (m s-2)",
-                            "twoballs.c", user.g, &user.g, NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsReal("-l", "rod length (m)", "twoballs.c",
+                            "rod.c", user.g, &user.g, NULL); CHKERRQ(ierr);
+    ierr = PetscOptionsReal("-l", "rod length (m)", "rod.c",
                             user.l, &user.l, NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsReal("-m", "mass of each ball (kg)", "twoballs.c",
+    ierr = PetscOptionsReal("-m", "mass of each ball (kg)", "rod.c",
                             user.m, &user.m, NULL); CHKERRQ(ierr);
     ierr = PetscOptionsEnd(); CHKERRQ(ierr);
 
@@ -82,11 +77,11 @@ int main(int argc,char **argv) {
     ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,10,10); CHKERRQ(ierr);
     ierr = MatSetFromOptions(A); CHKERRQ(ierr);
     ierr = MatSetUp(A); CHKERRQ(ierr);
-    if (user.connect == ROD) {
-        ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX2);
+    if (user.free) {
+        ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX1);
             CHKERRQ(ierr);
     } else {
-        ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX1);
+        ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX2);
             CHKERRQ(ierr);
     }
     ierr = TSSetIFunction(ts,NULL,LagrangeIFcn,&user); CHKERRQ(ierr);
@@ -103,7 +98,7 @@ int main(int argc,char **argv) {
     ierr = TSGetTime(ts, &tf); CHKERRQ(ierr);
 
     // numerical error in free case
-    if (user.connect == FREE) {
+    if (user.free) {
         ierr = VecDuplicate(u, &uexact); CHKERRQ(ierr);
         // get initial condition for evaluating exact solution
         ierr = VecDuplicate(u, &u0); CHKERRQ(ierr);
@@ -120,9 +115,11 @@ int main(int argc,char **argv) {
 
     // report
     ierr = TSGetStepNumber(ts,&steps); CHKERRQ(ierr);
+    if (user.free)
+        strcpy(probstr, "free");
     ierr = PetscPrintf(PETSC_COMM_WORLD,
                "%s problem solved to tf = %.3f (%d steps)\n",
-               ConnectTypes[user.connect], tf, steps); CHKERRQ(ierr);
+               probstr, tf, steps); CHKERRQ(ierr);
 
     MatDestroy(&A);  VecDestroy(&u);  TSDestroy(&ts);
     return PetscFinalize();
@@ -130,7 +127,7 @@ int main(int argc,char **argv) {
 
 /* Regarding the following functions:
 In the rod case the solution is a 10-dimensional vector u.
-Here is the correspondence with the notes (doc/twoballs.pdf):
+Here is the correspondence with the notes (doc/rod.pdf):
 u[0] = q_1 (= x_1)
 u[1] = q_2 (= y_1)
 u[2] = q_3 (= x_2)
@@ -143,7 +140,7 @@ u[8] = mu
 u[9] = lambda
 */
 
-PetscErrorCode SetInitial(Vec u, TBCtx *user) {
+PetscErrorCode SetInitial(Vec u, RodCtx *user) {
     /* Set initial conditions compatible with the rod constraint
         0 = g(q) = (1/2) ( (q1 - q3)^2 + (q2 - q4)^2 - l^2 )    (1)
     and the velocity constraint
@@ -170,16 +167,16 @@ PetscErrorCode SetInitial(Vec u, TBCtx *user) {
     au[6] = 15.0;             // v3
     au[7] = au[5];            // v4;  satisfies (2)
     au[8] = 0.0;          // mu
-    if (user->connect == ROD) { // set lambda to satisfy (3)
+    if (user->free)
+        au[9] = 0.0;
+    else // set lambda to satisfy (3)
         au[9] = c * ( (au[4] - au[6]) * (au[4] - au[6])
                      + (au[5] - au[7]) * (au[5] - au[7]));
-    } else  // unconstrained FREE case
-        au[9] = 0.0;
     ierr = VecRestoreArray(u,&au); CHKERRQ(ierr);
     return 0;
 }
 
-PetscErrorCode FreeExact(Vec u0, PetscReal tf, Vec uexact, TBCtx *user) {
+PetscErrorCode FreeExact(Vec u0, PetscReal tf, Vec uexact, RodCtx *user) {
     /* Exact solution based on parabolic motion.  Problem
         m x'' = 0,       x(0) = x0,  x'(0) = v0
         m y'' = - m g,   y(0) = y0,  y'(0) = w0
@@ -188,7 +185,7 @@ PetscErrorCode FreeExact(Vec u0, PetscReal tf, Vec uexact, TBCtx *user) {
         y(t) = y0 + w0 t - (g/2) t^2,  y'(t) = w0 - g t    */
     PetscErrorCode ierr;
     PetscReal *au0, *auex;
-    if (user->connect != FREE) {
+    if (!user->free) {
         SETERRQ(PETSC_COMM_SELF,7,"exact solution only implemented for free\n");
     }
     ierr = VecGetArray(u0, &au0); CHKERRQ(ierr);
@@ -211,7 +208,7 @@ PetscErrorCode FreeExact(Vec u0, PetscReal tf, Vec uexact, TBCtx *user) {
 PetscErrorCode LagrangeIFcn(TS ts, PetscReal t, Vec u, Vec udot, Vec F,
                             void *ctx) {
     PetscErrorCode   ierr;
-    TBCtx            *user = (TBCtx*)ctx;
+    RodCtx           *user = (RodCtx*)ctx;
     const PetscReal  *au, *audot, mg = user->m * user->g;
     PetscReal        *aF, dx, dy, dvx, dvy;
 
@@ -231,12 +228,12 @@ PetscErrorCode LagrangeIFcn(TS ts, PetscReal t, Vec u, Vec udot, Vec F,
     aF[5] = user->m * audot[5] + mg + au[9] * dy;
     aF[6] = user->m * audot[6] - au[9] * dx;
     aF[7] = user->m * audot[7] + mg - au[9] * dy;
-    if (user->connect == ROD) {
-        aF[8] = 0.5 * ( dx * dx + dy * dy - user->l * user->l );  // constraint
-        aF[9] = dx * dvx + dy * dvy;  // velocity constraint
-    } else { // FREE is trivial index 1 DAE
+    if (user->free) { // trivial index 1 DAE
         aF[8] = au[8];             // equation:  mu = 0
         aF[9] = au[9];             // equation:  lambda = 0
+    } else {
+        aF[8] = 0.5 * ( dx * dx + dy * dy - user->l * user->l );  // constraint
+        aF[9] = dx * dvx + dy * dvy;  // velocity constraint
     }
     ierr = VecRestoreArrayRead(u,&au); CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(udot,&audot); CHKERRQ(ierr);
@@ -247,7 +244,7 @@ PetscErrorCode LagrangeIFcn(TS ts, PetscReal t, Vec u, Vec udot, Vec F,
 PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot,
                             PetscReal sigma, Mat J, Mat Jpre, void *ctx) {
     PetscErrorCode   ierr;
-    TBCtx            *user = (TBCtx*)ctx;
+    RodCtx           *user = (RodCtx*)ctx;
     const PetscReal  *au;
     PetscInt         row, col[8], n;    // max nonzeros in a row of J is 4
     PetscReal        val[8];
@@ -295,7 +292,13 @@ PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot,
     val[0] = -au[9];         val[1] = au[9];
     val[2] = sigma*user->m;  val[3] = -(au[1] - au[3]);
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-    if (user->connect == ROD) {
+    if (user->free) {
+        n = 1;
+        row = 8;  col[0] = 8;  val[0] = 1.0; // equation mu = 0
+        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
+        row = 9;  col[0] = 9;  val[0] = 1.0; // equation lambda = 0
+        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
+    } else {
         n = 4;  row = 8;  n = 4;
         col[0] = 0;  col[1] = 1;  col[2] = 2;  col[3] = 3;
         val[0] = au[0] - au[2];     val[1] = au[1] - au[3];
@@ -308,12 +311,6 @@ PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot,
         val[2] = -(au[4] - au[6]);  val[3] = -(au[5] - au[7]);
         val[4] = au[0] - au[2];     val[5] = au[1] - au[3];
         val[6] = -(au[0] - au[2]);  val[7] = -(au[1] - au[3]);
-        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-    } else { // FREE
-        n = 1;
-        row = 8;  col[0] = 8;  val[0] = 1.0; // equation mu = 0
-        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-        row = 9;  col[0] = 9;  val[0] = 1.0; // equation lambda = 0
         ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     }
     ierr = VecRestoreArrayRead(u,&au); CHKERRQ(ierr);
