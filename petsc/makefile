@@ -2,7 +2,11 @@ include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 CFLAGS += -pedantic -std=c99
 
-all: pyScripts twoballs
+all: pyScripts loose twoballs
+
+loose: loose.o
+	-${CLINKER} -o loose loose.o  ${PETSC_LIB}
+	${RM} loose.o
 
 twoballs: twoballs.o
 	-${CLINKER} -o twoballs twoballs.o  ${PETSC_LIB}
@@ -15,11 +19,11 @@ pyScripts:
 	ln -sf ${PETSC_DIR}/lib/petsc/bin/petsc_conf.py
 
 # testing
-runtwoballs_1: twoballs
-	-@./testit.sh twoballs "-tb_newtonian -tb_connect free -ts_monitor" 1 1
+runloose_1: loose
+	-@./testit.sh loose "-ts_monitor" 1 1
 
-runtwoballs_2: twoballs
-	-@./testit.sh twoballs "-tb_newtonian -tb_connect spring -ts_monitor -tb_k 0.1 -tb_l 1" 1 2
+runloose_2: loose
+	-@./testit.sh loose "-lse_spring -ts_monitor -lse_k 0.1 -lse_l 1" 1 2
 
 # result here depends on (fixed) time step ... it is index 3 after all!
 runtwoballs_3: twoballs
@@ -31,9 +35,10 @@ runtwoballs_4: twoballs
 runtrajectory_1: runtwoballs_3 pyScripts
 	-@./testit.sh trajectory.py "-o figure.png t.dat u.dat" 1 1
 
-test_twoballs: runtwoballs_1 runtwoballs_2 runtwoballs_3 runtwoballs_4
+test_loose: runloose_1 runloose_2
+test_twoballs: runtwoballs_3 runtwoballs_4
 test_trajectory: runtrajectory_1
-test: test_twoballs test_trajectory
+test: test_loose test_twoballs test_trajectory
 
 .PHONY: distclean
 

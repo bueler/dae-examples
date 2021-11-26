@@ -3,4 +3,4 @@
 2 TS dt 0.95 time 1.05
 3 TS dt 9.5 time 2.
 numerical error at tf in free problem: |u-uexact|_inf = 3.55271e-15
-Newtonian free problem solved to tf = 2.000 (3 steps)
+free problem solved to tf = 2.000 (3 steps)

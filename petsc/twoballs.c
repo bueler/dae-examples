@@ -1,9 +1,7 @@
 static char help[] = "DAE system solver example using TS.  Models two\n"
 "equal-mass balls (particles) moving in the plane with a rigid connecting\n"
-"rod between.  Alternatively they can be unconnected (free) or connected\n"
-"by a spring.  A constrained Lagrangian dynamics formulation, converted\n"
-"to stabilized index-2 form is used.  Alternatively, the free/spring\n"
-"cases can be solved via a Newtonian ODE system.  We use cartesian\n"
+"rod between.  A constrained Lagrangian dynamics formulation, converted\n"
+"to stabilized index-2 form is used.  We use cartesian\n"
 "coordinates (x,y) and velocities (v=dx/dt,w=dy/dt). The system has\n"
 "dimension 10 in the main case (rod, stabilized index-2).\n\n";
 
@@ -21,22 +19,19 @@ static char help[] = "DAE system solver example using TS.  Models two\n"
 
 #include <petsc.h>
 
-typedef enum {FREE, SPRING, ROD} ConnectType;
-static const char* ConnectTypes[] = {"free","spring","rod",
+typedef enum {FREE, ROD} ConnectType;
+static const char* ConnectTypes[] = {"free","rod",
                                      "ProblemType", "", NULL};
 
 typedef struct {
     ConnectType  connect;
-    PetscBool    newtonian;
     PetscReal    g,     // m s-2;  acceleration of gravity
                  m,     // kg;     ball mass
-                 l,     // m;      spring or rod length
-                 k;     // N m-1;  spring constant
+                 l;     // m;      spring or rod length
 } TBCtx;
 
 extern PetscErrorCode SetInitial(Vec, TBCtx*);
 extern PetscErrorCode FreeExact(Vec, PetscReal, Vec, TBCtx*);
-extern PetscErrorCode NewtonRHSFcn(TS, PetscReal, Vec, Vec, void*);
 extern PetscErrorCode LagrangeIFcn(TS, PetscReal, Vec, Vec, Vec, void*);
 extern PetscErrorCode LagrangeIJac(TS, PetscReal, Vec, Vec, PetscReal,
                                    Mat, Mat, void*);
@@ -46,37 +41,28 @@ int main(int argc,char **argv) {
     PetscInt       steps;
     PetscReal      t0 = 0.0, tf = 2.0, dt = 0.1, errnorm;
     Vec            u, u0, uexact;
-    Mat            A; // not used with free,nspring
+    Mat            A;
     TS             ts;
     TBCtx          user;
-    char           fstr[20] = "";
 
     ierr = PetscInitialize(&argc, &argv, NULL, help); if (ierr) return ierr;
 
     user.connect = FREE;
-    user.newtonian = PETSC_FALSE;
     user.g = 9.81;
     user.m = 58.0e-3; // 58 g for a tennis ball
-    user.l = 0.5;     // spring/rod length, and determines initial condition
-    user.k = 20.0;    // spring constant (ignored by free,spring)
+    user.l = 0.5;     // rod length, and determines initial condition
     ierr = PetscOptionsBegin(PETSC_COMM_WORLD, "tb_", "options for twoballs",
                              ""); CHKERRQ(ierr);
-    ierr = PetscOptionsEnum("-connect","connect balls: free,spring,rod",
+    ierr = PetscOptionsEnum("-connect","connect balls: free,rod",
                             "twoballs.c", ConnectTypes,
                             (PetscEnum)user.connect,
                             (PetscEnum*)&user.connect, NULL); CHKERRQ(ierr);
     ierr = PetscOptionsReal("-g", "acceleration of gravity (m s-2)",
                             "twoballs.c", user.g, &user.g, NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsReal("-k", "spring constant (N m-1)", "twoballs.c",
-                            user.k, &user.k, NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsReal("-l", "spring length (m)", "twoballs.c",
+    ierr = PetscOptionsReal("-l", "rod length (m)", "twoballs.c",
                             user.l, &user.l, NULL); CHKERRQ(ierr);
     ierr = PetscOptionsReal("-m", "mass of each ball (kg)", "twoballs.c",
                             user.m, &user.m, NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsBool("-newtonian",
-                            "use Newtonian formulation (free or spring only)",
-                            "twoballs.c", user.newtonian, &user.newtonian,
-                            NULL); CHKERRQ(ierr);
     ierr = PetscOptionsEnd(); CHKERRQ(ierr);
 
     ierr = VecCreate(PETSC_COMM_WORLD,&u); CHKERRQ(ierr);
@@ -91,36 +77,21 @@ int main(int argc,char **argv) {
     ierr = TSSetExactFinalTime(ts,TS_EXACTFINALTIME_MATCHSTEP); CHKERRQ(ierr);
 
     // set up dimension, equation type, and solver type
-    if (user.newtonian) {
-        if (user.connect == ROD) {
-            SETERRQ(PETSC_COMM_SELF,1,
-                    "rod is not implemented in Newtonian force formulation\n");
-        }
-        ierr = VecSetSizes(u,PETSC_DECIDE,8); CHKERRQ(ierr);
-        ierr = TSSetEquationType(ts, TS_EQ_ODE_EXPLICIT); CHKERRQ(ierr);
-        ierr = TSSetRHSFunction(ts,NULL,NewtonRHSFcn,&user); CHKERRQ(ierr);
-        ierr = TSSetType(ts,TSRK); CHKERRQ(ierr);
+    ierr = VecSetSizes(u,PETSC_DECIDE,10); CHKERRQ(ierr);
+    ierr = MatCreate(PETSC_COMM_WORLD,&A); CHKERRQ(ierr);
+    ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,10,10); CHKERRQ(ierr);
+    ierr = MatSetFromOptions(A); CHKERRQ(ierr);
+    ierr = MatSetUp(A); CHKERRQ(ierr);
+    if (user.connect == ROD) {
+        ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX2);
+            CHKERRQ(ierr);
     } else {
-        if (user.connect == SPRING) {
-            SETERRQ(PETSC_COMM_SELF,2,
-                "spring is not YET implemented in Lagrangian formulation\n");
-        }
-        ierr = VecSetSizes(u,PETSC_DECIDE,10); CHKERRQ(ierr);
-        ierr = MatCreate(PETSC_COMM_WORLD,&A); CHKERRQ(ierr);
-        ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,10,10); CHKERRQ(ierr);
-        ierr = MatSetFromOptions(A); CHKERRQ(ierr);
-        ierr = MatSetUp(A); CHKERRQ(ierr);
-        if (user.connect == ROD) {
-            ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX2);
-                CHKERRQ(ierr);
-        } else {
-            ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX1);
-                CHKERRQ(ierr);
-        }
-        ierr = TSSetIFunction(ts,NULL,LagrangeIFcn,&user); CHKERRQ(ierr);
-        ierr = TSSetIJacobian(ts,A,A,LagrangeIJac,&user);CHKERRQ(ierr);
-        ierr = TSSetType(ts,TSBEULER); CHKERRQ(ierr); // FIXME BDF3 as default?
+        ierr = TSSetEquationType(ts, TS_EQ_DAE_IMPLICIT_INDEX1);
+            CHKERRQ(ierr);
     }
+    ierr = TSSetIFunction(ts,NULL,LagrangeIFcn,&user); CHKERRQ(ierr);
+    ierr = TSSetIJacobian(ts,A,A,LagrangeIJac,&user);CHKERRQ(ierr);
+    ierr = TSSetType(ts,TSBEULER); CHKERRQ(ierr); // FIXME BDF3 as default?
 
     // set-up of u, ts is complete
     ierr = VecSetFromOptions(u); CHKERRQ(ierr);
@@ -149,15 +120,11 @@ int main(int argc,char **argv) {
 
     // report
     ierr = TSGetStepNumber(ts,&steps); CHKERRQ(ierr);
-    if (user.newtonian)
-        strcpy(fstr, "Newtonian ");
     ierr = PetscPrintf(PETSC_COMM_WORLD,
-               "%s%s problem solved to tf = %.3f (%d steps)\n",
-               fstr, ConnectTypes[user.connect], tf, steps); CHKERRQ(ierr);
+               "%s problem solved to tf = %.3f (%d steps)\n",
+               ConnectTypes[user.connect], tf, steps); CHKERRQ(ierr);
 
-    if (!user.newtonian)
-        MatDestroy(&A);
-    VecDestroy(&u);  TSDestroy(&ts);
+    MatDestroy(&A);  VecDestroy(&u);  TSDestroy(&ts);
     return PetscFinalize();
 }
 
@@ -202,14 +169,12 @@ PetscErrorCode SetInitial(Vec u, TBCtx *user) {
     au[5] = 10.0;             // v2
     au[6] = 15.0;             // v3
     au[7] = au[5];            // v4;  satisfies (2)
-    if (!user->newtonian) {
-        au[8] = 0.0;          // mu
-        if (user->connect == ROD) { // set lambda to satisfy (3)
-            au[9] = c * ( (au[4] - au[6]) * (au[4] - au[6])
-                         + (au[5] - au[7]) * (au[5] - au[7]));
-        } else  // unconstrained FREE and SPRING cases
-            au[9] = 0.0;
-    }
+    au[8] = 0.0;          // mu
+    if (user->connect == ROD) { // set lambda to satisfy (3)
+        au[9] = c * ( (au[4] - au[6]) * (au[4] - au[6])
+                     + (au[5] - au[7]) * (au[5] - au[7]));
+    } else  // unconstrained FREE case
+        au[9] = 0.0;
     ierr = VecRestoreArray(u,&au); CHKERRQ(ierr);
     return 0;
 }
@@ -236,58 +201,11 @@ PetscErrorCode FreeExact(Vec u0, PetscReal tf, Vec uexact, TBCtx *user) {
     auex[5] = au0[5] - user->g * tf;
     auex[6] = au0[6];
     auex[7] = au0[7] - user->g * tf;
-    if (!user->newtonian) {
-        auex[8] = 0.0;  // mu
-        auex[9] = 0.0;  // lambda
-    }
+    auex[8] = 0.0;  // mu
+    auex[9] = 0.0;  // lambda
     ierr = VecRestoreArray(u0, &au0); CHKERRQ(ierr);
     ierr = VecRestoreArray(uexact, &auex); CHKERRQ(ierr);
     return 0;
-}
-
-PetscErrorCode NewtonRHSFcn(TS ts, PetscReal t, Vec u, Vec G, void *ctx) {
-    PetscErrorCode   ierr;
-    TBCtx            *user = (TBCtx*)ctx;
-    const PetscReal  *au;
-    PetscReal        *aG;
-    PetscReal        dspring = 0.0, cspring = 0.0, Fx1, Fy1, Fx2, Fy2;
-
-    PetscFunctionBeginUser;
-    if (!user->newtonian) {
-        SETERRQ(PETSC_COMM_SELF,7,"NewtonRHSFcn() is for -tb_newtonian\n");
-    }
-    if (user->connect == ROD) {
-        SETERRQ(PETSC_COMM_SELF,2,"NewtonRHSFcn() does not do rod\n");
-    }
-    ierr = VecGetArrayRead(u,&au); CHKERRQ(ierr);
-    ierr = VecGetArray(G,&aG); CHKERRQ(ierr);
-    Fx1 = 0.0;
-    Fy1 = - user->m * user->g;
-    Fx2 = 0.0;
-    Fy2 = - user->m * user->g;
-    if (user->connect == SPRING) {
-        dspring = PetscSqrtReal(  (au[0] - au[2]) * (au[0] - au[2])
-                                + (au[1] - au[3]) * (au[1] - au[3]) );
-        if (dspring == 0.0) {
-            SETERRQ(PETSC_COMM_SELF,1,"exact ball collision (unlikely?)\n");
-        }
-        cspring = user->k * (1.0 - user->l / dspring);
-        Fx1 -= cspring * (au[0] - au[2]);
-        Fy1 -= cspring * (au[1] - au[3]);
-        Fx2 += cspring * (au[0] - au[2]);
-        Fy2 += cspring * (au[1] - au[3]);
-    }
-    aG[0] = au[4];
-    aG[1] = au[5];
-    aG[2] = au[6];
-    aG[3] = au[7];
-    aG[4] = Fx1 / user->m;
-    aG[5] = Fy1 / user->m;
-    aG[6] = Fx2 / user->m;
-    aG[7] = Fy2 / user->m;
-    ierr = VecRestoreArrayRead(u,&au); CHKERRQ(ierr);
-    ierr = VecRestoreArray(G,&aG); CHKERRQ(ierr);
-    PetscFunctionReturn(0);
 }
 
 PetscErrorCode LagrangeIFcn(TS ts, PetscReal t, Vec u, Vec udot, Vec F,
@@ -298,12 +216,6 @@ PetscErrorCode LagrangeIFcn(TS ts, PetscReal t, Vec u, Vec udot, Vec F,
     PetscReal        *aF, dx, dy, dvx, dvy;
 
     PetscFunctionBeginUser;
-    if (user->newtonian) {
-        SETERRQ(PETSC_COMM_SELF,8,"should not get here with -tb_newtonian\n");
-    }
-    if (user->connect == SPRING) {
-        SETERRQ(PETSC_COMM_SELF,5,"spring not yet implemented\n");
-    }
     ierr = VecGetArrayRead(u,&au); CHKERRQ(ierr);
     ierr = VecGetArrayRead(udot,&audot); CHKERRQ(ierr);
     ierr = VecGetArray(F,&aF); CHKERRQ(ierr);
@@ -341,12 +253,6 @@ PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot,
     PetscReal        val[8];
 
     PetscFunctionBeginUser;
-    if (user->newtonian) {
-        SETERRQ(PETSC_COMM_SELF,8,"should not get here with -tb_newtonian\n");
-    }
-    if (user->connect == SPRING) {
-        SETERRQ(PETSC_COMM_SELF,5,"spring not yet implemented\n");
-    }
     ierr = VecGetArrayRead(u,&au); CHKERRQ(ierr);
     // construct Jacobian by rows, inserting nonzeros
     row = 0;  n = 4;   // row 0 has 4 nonzeros ...
@@ -410,9 +316,7 @@ PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot,
         row = 9;  col[0] = 9;  val[0] = 1.0; // equation lambda = 0
         ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     }
-
     ierr = VecRestoreArrayRead(u,&au); CHKERRQ(ierr);
-
     ierr = MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     ierr = MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
     if (J != Jpre) {
