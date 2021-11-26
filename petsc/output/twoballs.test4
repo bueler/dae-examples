@@ -1,20 +1,20 @@
 0 TS dt 0.1 time 0.
-1 TS dt 0.00107977 time 0.001
-2 TS dt 0.0017731 time 0.00207977
-3 TS dt 0.00212539 time 0.00385287
-4 TS dt 0.00280698 time 0.00597827
-5 TS dt 0.00412147 time 0.00878524
-6 TS dt 0.00800394 time 0.0129067
-7 TS dt 0.0119661 time 0.0209107
-8 TS dt 0.0157166 time 0.0328767
-9 TS dt 0.0237082 time 0.0485933
-10 TS dt 0.0432459 time 0.0723015
-11 TS dt 0.0864917 time 0.115547
-12 TS dt 0.115198 time 0.202039
-13 TS dt 0.179745 time 0.317237
-14 TS dt 0.322973 time 0.496982
-15 TS dt 0.590022 time 0.819955
-16 TS dt 0.590022 time 1.40998
-17 TS dt 0.916176 time 2.
-numerical error at tf in free problem: |u-uexact|_inf = 3.37848e-07
-Lagrangian free problem solved to tf = 2.000 (17 steps)
+1 TS dt 0.00110859 time 0.001
+2 TS dt 0.00182148 time 0.00210859
+3 TS dt 0.00217233 time 0.00393007
+4 TS dt 0.00287265 time 0.00610239
+5 TS dt 0.0042267 time 0.00897504
+6 TS dt 0.00825268 time 0.0132017
+7 TS dt 0.0122452 time 0.0214544
+8 TS dt 0.016108 time 0.0336996
+9 TS dt 0.0243315 time 0.0498076
+10 TS dt 0.0445399 time 0.0741391
+11 TS dt 0.0890798 time 0.118679
+12 TS dt 0.118442 time 0.207759
+13 TS dt 0.185085 time 0.326201
+14 TS dt 0.333104 time 0.511285
+15 TS dt 0.577805 time 0.84439
+16 TS dt 0.577805 time 1.42219
+17 TS dt 0.921208 time 2.
+numerical error at tf in free problem: |u-uexact|_inf = 1.25520e-07
+free problem solved to tf = 2.000 (17 steps)
