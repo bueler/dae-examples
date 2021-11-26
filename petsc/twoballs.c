@@ -7,8 +7,14 @@ static char help[] = "DAE system solver example using TS.  Models two\n"
 "coordinates (x,y) and velocities (v=dx/dt,w=dy/dt). The system has\n"
 "dimension 10 in the main case (rod, stabilized index-2).\n\n";
 
-// DEBUG check Jacobian for rod problem using one backward-Euler step:
+// DEBUG possibly a good solution using BDF3 and -snes_fd
+// ./twoballs -tb_connect rod -ts_type bdf -ksp_type preonly -pc_type svd -ts_monitor binary:t.dat -ts_monitor_solution binary:u.dat -ts_dt 0.01 -ts_max_time 1.0 -snes_fd -ts_bdf_order 3
+// ./trajectory.py -o figure.png t.dat u.dat
+
+// DEBUG check Jacobian for rod problem using one backward-Euler step
+// (2nd case with -snes_fd):
 // ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat
+// ./twoballs -ts_type beuler -tb_connect rod -ts_max_time 0.1 -ts_dt 0.1 -ksp_type preonly -pc_type svd -snes_monitor -ksp_view_mat -snes_fd
 
 // DEBUG check BDF2 convergence in free problem using Lagrangian formulation:
 //for T in 2 3 4 5 7 8 9 10 11 12; do ./twoballs -tb_connect free -ts_type bdf -ts_rtol 1.0e-$T -ts_atol 1.0e-$T; done
@@ -326,71 +332,84 @@ PetscErrorCode LagrangeIFcn(TS ts, PetscReal t, Vec u, Vec udot, Vec F,
     PetscFunctionReturn(0);
 }
 
-FIXME
-PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot, PetscReal a,
-                            Mat J, Mat Jpre, void *ctx) {
+PetscErrorCode LagrangeIJac(TS ts, PetscReal t, Vec u, Vec udot,
+                            PetscReal sigma, Mat J, Mat Jpre, void *ctx) {
     PetscErrorCode   ierr;
     TBCtx            *user = (TBCtx*)ctx;
     const PetscReal  *au;
-    PetscInt         row, col[4], n;    // max nonzeros in a row of J is 4
-    PetscReal        val[4];
+    PetscInt         row, col[8], n;    // max nonzeros in a row of J is 4
+    PetscReal        val[8];
 
     PetscFunctionBeginUser;
+    if (user->newtonian) {
+        SETERRQ(PETSC_COMM_SELF,8,"should not get here with -tb_newtonian\n");
+    }
     if (user->connect == SPRING) {
         SETERRQ(PETSC_COMM_SELF,5,"spring not yet implemented\n");
     }
-
     ierr = VecGetArrayRead(u,&au); CHKERRQ(ierr);
     // construct Jacobian by rows, inserting nonzeros
-    row = 0;  n = 2;   // row 0 has 2 nonzeros ...
-    col[0] = 0;   col[1] = 2;
-    val[0] = a;   val[1] = -1.0;
+    row = 0;  n = 4;   // row 0 has 4 nonzeros ...
+    col[0] = 0;  col[1] = 2;  col[2] = 4;  col[3] = 8;
+    val[0] = sigma + au[8];  val[1] = - au[8];
+    val[2] = -1;             val[3] = au[0] - au[2];
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-    row = 1;  n = 2;
-    col[0] = 1;   col[1] = 3;  // same values as row 0
+    row = 1;  n = 4;
+    col[0] = 1;  col[1] = 3;  col[2] = 5;  col[3] = 8;
+    val[0] = sigma + au[8];  val[1] = - au[8];
+    val[2] = -1;             val[3] = au[1] - au[3];
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     row = 2;  n = 4;
-    col[0] = 0;             col[1] = 2;
-    val[0] = 2.0 * au[8];   val[1] = a * user->m;
-    col[2] = 4;             col[3] = 8;
-    val[2] = -2.0 * au[8];  val[3] = 2.0 * (au[0] - au[4]);
+    col[0] = 0;  col[1] = 2;  col[2] = 6;  col[3] = 8;
+    val[0] = - au[8];        val[1] = sigma + au[8];
+    val[2] = -1;             val[3] = -(au[0] - au[2]);
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     row = 3;  n = 4;
-    col[0] = 1;             col[1] = 3;
-    col[2] = 5;             col[3] = 8;
-    val[3] = 2.0 * (au[1] - au[5]);  // other values same as row 2
+    col[0] = 1;  col[1] = 3;  col[2] = 7;  col[3] = 8;
+    val[0] = - au[8];        val[1] = sigma + au[8];
+    val[2] = -1;             val[3] = -(au[1] - au[3]);
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-    row = 4;  n = 2;
-    col[0] = 4;   col[1] = 6;
-    val[0] = a;   val[1] = -1.0;
+    row = 4;  n = 4;
+    col[0] = 0;  col[1] = 2;  col[2] = 4;  col[3] = 9;
+    val[0] = au[9];          val[1] = - au[9];
+    val[2] = sigma*user->m;  val[3] = au[0] - au[2];
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-    row = 5;  n = 2;
-    col[0] = 5;   col[1] = 7;  // same values as row 4
+    row = 5;  n = 4;
+    col[0] = 1;  col[1] = 3;  col[2] = 5;  col[3] = 9;
+    val[0] = au[9];          val[1] = - au[9];
+    val[2] = sigma*user->m;  val[3] = au[1] - au[3];
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     row = 6;  n = 4;
-    col[0] = 0;              col[1] = 4;
-    val[0] = -2.0 * au[8];   val[1] = 2.0 * au[8];
-    col[2] = 6;              col[3] = 8;
-    val[2] = a * user->m;    val[3] = -2.0 * (au[0] - au[4]);
+    col[0] = 0;  col[1] = 2;  col[2] = 6;  col[3] = 9;
+    val[0] = -au[9];         val[1] = au[9];
+    val[2] = sigma*user->m;  val[3] = -(au[0] - au[2]);
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     row = 7;  n = 4;
-    col[0] = 1;              col[1] = 5;
-    col[2] = 7;              col[3] = 8;
-    val[3] = -2.0 * (au[1] - au[5]);  // other values same as row 6
+    col[0] = 1;  col[1] = 3;  col[2] = 7;  col[3] = 9;
+    val[0] = -au[9];         val[1] = au[9];
+    val[2] = sigma*user->m;  val[3] = -(au[1] - au[3]);
     ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
-    row = 8;
     if (user->connect == ROD) {
-        n = 4;
-        col[0] = 0;                       col[1] = 1;
-        val[0] = 2.0 * (au[0] - au[4]);   val[1] = 2.0 * (au[1] - au[5]);
-        col[2] = 4;                       col[3] = 5;
-        val[2] = -2.0 * (au[0] - au[4]);  val[3] = -2.0 * (au[1] - au[5]);
-    } else { // for equation  lambda = 0
+        n = 4;  row = 8;  n = 4;
+        col[0] = 0;  col[1] = 1;  col[2] = 2;  col[3] = 3;
+        val[0] = au[0] - au[2];     val[1] = au[1] - au[3];
+        val[2] = -(au[0] - au[2]);  val[3] = -(au[1] - au[3]);
+        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
+        n = 4;  row = 9;  n = 8;
+        col[0] = 0;  col[1] = 1;  col[2] = 2;  col[3] = 3;
+        col[4] = 4;  col[5] = 5;  col[6] = 6;  col[7] = 7;
+        val[0] = au[4] - au[6];     val[1] = au[5] - au[7];
+        val[2] = -(au[4] - au[6]);  val[3] = -(au[5] - au[7]);
+        val[4] = au[0] - au[2];     val[5] = au[1] - au[3];
+        val[6] = -(au[0] - au[2]);  val[7] = -(au[1] - au[3]);
+        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
+    } else { // FREE
         n = 1;
-        col[0] = 8;
-        val[0] = 1.0;
+        row = 8;  col[0] = 8;  val[0] = 1.0; // equation mu = 0
+        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
+        row = 9;  col[0] = 9;  val[0] = 1.0; // equation lambda = 0
+        ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
     }
-    ierr = MatSetValues(J,1,&row,n,col,val,INSERT_VALUES); CHKERRQ(ierr);
 
     ierr = VecRestoreArrayRead(u,&au); CHKERRQ(ierr);
 
