@@ -1,6 +1,6 @@
 \documentclass[letterpaper,final,12pt,reqno]{amsart}
 
-\usepackage[total={6.3in,9.2in},top=1.1in,left=1.1in]{geometry}
+\usepackage[total={6.0in,8.8in},top=1.3in,left=1.25in]{geometry}
 
 \usepackage{times,bm,bbm,empheq,verbatim,fancyvrb,graphicx}
 \usepackage[dvipsnames]{xcolor}
@@ -78,7 +78,7 @@ urlcolor=black    % ...
 \author{Ed Bueler}
 
 \begin{abstract}
-The problem of two equal-mass balls, rigidly connected by a massless rod, is described by an index-3 differential-algebraic equations (DAE) system.  The system is reduced to a stabilized index-2 DAE system with identical solutions.  Numerical solutions using implicit PETSc TS solvers are evaluated.
+The problem of two equal-mass balls, rigidly connected by a massless rod, is described by an index-3 differential-algebraic equations (DAE) system.  An index-reduction procedure rewrites it as a stabilized index-2 DAE system.  Numerical solutions using implicit PETSc TS solvers are evaluated.
 \end{abstract}
 
 \maketitle
@@ -88,25 +88,74 @@ The problem of two equal-mass balls, rigidly connected by a massless rod, is des
 \thispagestyle{empty}
 \bigskip
 
-\section{Equations of motion using Lagrangian dynamics}
+\section{What are the cartesian equations of motion?}
 
 Consider the problem of two equal masses $m$, labeled ``$a$'' and ``$b$'', moving in the $(x,y)$ plane, with $x$ horizontal and $y$ vertical.  We may form a column vector from their cartesian coordinates,
 \begin{equation}
 \bq(t) = \begin{bmatrix} q_1(t) \\ q_2(t) \\ q_3(t) \\ q_4(t) \end{bmatrix} = \begin{bmatrix} x_a(t) \\ y_a(t) \\ x_b(t) \\ y_b(t) \end{bmatrix}. \label{position}
 \end{equation}
-Now suppose the two masses move according to two forces.  First, gravity acts vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The positions of the two masses are therefore constrained to satisfy $(x_a - x_b)^2 + (y_a - y_b)^2 = \ell^2$ at all times, equivalently, a certain scalar function of the coordinates is identically zero:
+
+Now suppose the two masses move according to two kinds of forces.  First, gravity acts vertically downwards.  Second, suppose the masses are connected by a rigid, massless rod with length $\ell$.  The positions of the two masses are therefore constrained to satisfy $(x_a - x_b)^2 + (y_a - y_b)^2 = \ell^2$ at all times.  Equivalently, a certain scalar function is identically zero:
 \begin{equation}
 0 = g(\bq) = \frac{1}{2} \Big((q_1 - q_3)^2 + (q_2 - q_4)^2 - \ell^2\Big). \label{constraint}
 \end{equation}
-(The overall constant $\frac{1}{2}$ is chosen for convenience.)  Physically speaking, the rod exerts a tension or expansion force along the line between the masses, which varies during the motion.  We denote this scalar force by $\lambda$, positive when the rod is pulling the two masses together.
+(The overall constant $\frac{1}{2}$ is chosen for later convenience.)
 
-Newton's second law says, of course, that if we have the total force $\bm{\Phi}(\bq,\lambda)$ then
+Physically speaking, the rod exerts a tension or expansion force along the line between the masses, which varies during the motion.  We denote this scalar force by $\lambda$, positive when the rod is pulling the two masses together.  Newton's second law says, of course, that the \emph{total} force $\bm{\Phi}(\bq,\lambda)$ determines the accelerations $\ddot \bq$, namely
 \begin{equation}
 m \ddot \bq = \bm{\Phi}(\bq,\lambda) \label{newtonssecond}
 \end{equation}
-describes the motion by determining the accelerations $\ddot \bq$.  This is all fine and good, except how are we to determine the total (vector) forces including those enforcing the constraint?  In particular, how does $\bm{\Phi}$ depend on the tension $\lambda$, and how does the constraint \eqref{constraint} determine $\lambda$?
+describes the motion.  This is all fine and good, except how are we to determine the total (vector) forces including those enforcing the constraint?  In particular, how does $\bm{\Phi}$ depend on the tension $\lambda$, and how does the constraint \eqref{constraint} determine $\lambda$?
 
-It is well-known that Newton's laws are poorly-suited to describing the forces in such a constrained situation, but that we can find the motion via \emph{Lagrangian dynamics}.  One can derive the Lagrangian approach from the calculus of variations, via \emph{Hamilton's principle of least action} \cite[equation (52.1)]{Lanczos1970}, but here we will simply use the Euler-Lagrange equations below as the source of our DAE system.  This Lagrangian analytical approach which applies broadly, across all of classical dynamics \cite{Layton1998}.
+
+\section{As a rigid body: easy}
+
+Classical mechanics does not regard this as a difficult problem.  It can be solved by a simple, planar application of the theory of \emph{rigid bodies} \cite[Vol.~1, Chapter 18]{Feynman2011i}.
+
+Let $\xi(t),\eta(t)$ be the coordinates of the center of mass; this is the center of the rod.   Let $\theta(t)$ be the angle in radians between the rod and the horizontal axis, specifically the angle between the positive $x$-axis and the vector from the center of mass $(\xi,\eta)$ to the first mass $(x_a,y_a) = (q_1,q_2)$.  In terms of the three new variables $\xi,\eta,\theta$, we can write
+\begin{equation}
+\bq = \begin{bmatrix} \xi + (\ell/2) \cos\theta \\ \eta + (\ell/2) \sin\theta \\ \xi - (\ell/2) \cos\theta \\ \eta - (\ell/2) \sin\theta  \end{bmatrix}.  \label{cartesianrigid}
+\end{equation}
+Immediately constraint \eqref{constraint} is satisfied.
+
+In the theory of rigid bodies the motion of the center of mass is determined by the external forces, here just gravity.  On the other hand the moment of inertial ($m\ell$) times the angular acceleration equals the torques applied to the rigid body.  Here there are no torques at all, so the angular acceleration is zero.  Thus, now that we are using the ``correct'' coordinates, the equations of motion are
+\begin{subequations}
+\label{rigidequations}
+\begin{align}
+      2 m \ddot\xi &= 0 \\
+     2 m \ddot\eta &= -2 m g_r \\
+m \ell \ddot\theta &= 0
+\end{align}
+\end{subequations}
+As a first-order system this has dimension 6.
+
+This is a delightfully trivial ODE system, with exact solution
+\begin{subequations}
+\label{rigidsolution}
+\begin{align}
+   \xi(t) &= \xi(0) + \dot\xi(0) t \\
+  \eta(t) &= \eta(0) + \dot\eta(0) t - \frac{1}{2} g_r t^2 \\
+\theta(t) &= \theta(0) + \dot\theta(0) t
+\end{align}
+\end{subequations}
+
+The problem is thus easy in the correct coordinates.  However, we are interested in the solution of the DAE system in the original cartesian coordinates, primarily because other more-complicated problems do not have a cute theory like rigid bodies.  The rigid body exact solution \eqref{rigidsolution} will be used to verify the numerical solution of the ``wrong coordinates'' DAE solution.
+
+In such verification usage we will need to convert the cartesian initial conditions to the initial conditions for the rigid body solution \eqref{rigidsolution}.  The key equations say that the cartesian velocity of each mass is the sum of the center-of-mass velocity plus the cross product of the angular velocity and the position vector of the mass relative to the center of mass, for instance $\bv = \bV + \bm{\omega}\times \br$ in obvious notation.  Thus, to do the initial-value conversion, we use \eqref{cartesianrigid} plus these equations for initial velocity:
+\begin{subequations}
+\label{velocitycartesianrigid}
+\begin{align}
+\dot q_1 &= \dot\xi - \dot\theta (q_2 - \eta) \\
+\dot q_2 &= \dot\eta + \dot\theta (q_1 - \xi) \\
+\dot q_3 &= \dot\xi - \dot\theta (q_4 - \eta) \\
+\dot q_4 &= \dot\eta + \dot\theta (q_3 - \xi)
+\end{align}
+\end{subequations}
+
+
+\section{Construction of a DAE system using Lagrangian dynamics}
+
+Returning to our naive, cartesian problem, it is well-known that Newton's laws are poorly-suited to describing the forces in such a constrained situation, but that we can find the motion via \emph{Lagrangian dynamics}.  One can derive the Lagrangian approach from the calculus of variations, via Hamilton's principle of least action or the principle of virtual work \cite{Lanczos1970}, but here we will simply use the derived Euler-Lagrange equations (below) as the source of our DAE system.  This Lagrangian analytical approach applies broadly, across all of classical dynamics \cite{Layton1998}.
 
 First, for unconstrained, non-dissipative motion described by the position variables $\bq(t) \in \RR^n$ and velocities $\dot\bq(t)$, one defines the \emph{Lagrangian} $\mathcal{L}_0(\bq,\dot\bq) = T(\bq,\dot\bq) - U(\bq)$ as the difference of kinetic and potential energy.  The motion $\bq(t)$ then solves the \emph{Euler-Lagrange differential equations} ($i=1,\dots,n$):
 \begin{equation}
